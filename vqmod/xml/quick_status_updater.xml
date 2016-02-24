@@ -1,0 +1,962 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+  <id>Quick order status updater</id>
+  <version>1.4.8</version>
+  <vqmver>2.4.0</vqmver>
+  <author>Sirius-dev</author>
+
+  <file name="admin/view/template/sale/order_info.tpl">
+    <operation>
+      <search position="replace"><![CDATA[<option value="<?php echo $order_statuses['order_status_id']; ?>"]]></search>
+      <add><![CDATA[<option value="<?php echo $order_statuses['order_status_id']; ?>" <?php if(isset($order_statuses['color']) && $order_statuses['color'] != '#000000') { ?>style="color:<?php echo $order_statuses['color']; ?>"<?php } ?>]]></add>
+    </operation>
+    <!-- yym_custom: tracking number logic moved into order_info.tpl
+    <operation>
+      <search position="before" offset="1"><![CDATA[<td><?php echo $text_invoice_no; ?></td>]]></search>
+      <add><![CDATA[
+      ]]></add>
+    </operation>
+    -->
+  </file>
+
+  <!-- buttons -->
+  <file name="admin/controller/dashboard/recent.php,admin/controller/common/home.php" error="skip">
+    <operation>
+      <search position="after"><![CDATA[public function index() {]]></search>
+      <add><![CDATA[
+      $this->load->language('module/quick_status_updater');
+      $this->load->model('localisation/order_status');
+      $data['order_statuses'] = $this->model_localisation_order_status->getOrderStatuses();
+
+      $data['qosu_os'] = $qosu_os = $this->config->get('qosu_order_statuses');
+      $data['text_qosu_add_history'] = $this->language->get('text_qosu_add_history');
+      $data['text_qosu_dialog_title'] = $this->language->get('text_qosu_dialog_title');
+      $data['text_qosu_tracking_number'] = $this->language->get('text_qosu_tracking_number');
+      $data['text_qosu_select_checkbox'] = $this->language->get('text_qosu_select_checkbox');
+      $data['text_qosu_barcode'] = $this->language->get('text_qosu_barcode');
+      $data['qosu_bg_mode'] = $this->config->get('qosu_bg_mode');
+      $data['qosu_barcode'] = $this->config->get('qosu_barcode');
+      $data['qosu_barcode_enabled'] = $this->config->get('qosu_barcode_enabled');
+
+      $data['button_save'] = $this->config->get('button_save');
+      $data['button_cancel'] = $this->config->get('button_cancel');
+      $data['button_close'] = $this->config->get('button_close');
+      $data['text_wait'] = $this->config->get('text_wait');
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="after"><![CDATA[=> $result['order_id'],]]></search>
+      <add><![CDATA[			'order_status_id'        => $result['order_status_id'],]]></add>
+    </operation>
+  </file>
+
+  <file name="admin/view/template/common/home.tpl" error="skip">
+    <operation error="skip">
+      <search position="after"><![CDATA[<div id="content">]]></search>
+      <!-- yym_custom: fix span->div -->
+      <add><![CDATA[
+      <div class="modal fade" id="quick-status-dialog" tabindex="-1" role="dialog"><div class="modalContent"></div></div>
+      ]]></add>
+    </operation>
+    <operation error="skip">
+      <search position="replace"><![CDATA[left"><?php echo $order['status']; ?></td>]]></search>
+      <add><![CDATA[left qosu-cell" order_id="<?php echo $order['order_id']; ?>" <?php if (!empty($qosu_bg_mode) && ($qosu_bg_mode == 'cell') && isset($qosu_os[$order['order_status_id']]['color']) && $qosu_os[$order['order_status_id']]['color'] != '#000000') { echo ' style="background-color:' . (isset($qosu_os[$order['order_status_id']]['color']) ? $qosu_os[$order['order_status_id']]['color'] : '') . '"'; } ?> title="<?php echo $text_qosu_add_history; ?>">
+          <?php if(empty($qosu_bg_mode) && isset($qosu_os[$order['order_status_id']]['color']) && $qosu_os[$order['order_status_id']]['color'] != '#000000') { ?>
+            <font color="<?php echo $qosu_os[$order['order_status_id']]['color']; ?>"><?php echo $order['status']; ?></font>
+          <?php } else { ?>
+            <?php echo $order['status']; ?>
+          <?php } ?>
+      </td>
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="admin/view/template/dashboard/recent.tpl,admin/view/template/common/home.tpl" error="skip">
+    <operation error="skip">
+      <search position="before"><![CDATA[<div class="panel panel-default">]]></search>
+      <!-- yym_custom: fix span->div -->
+      <add><![CDATA[
+      <div class="modal fade" id="quick-status-dialog" tabindex="-1" role="dialog"><div class="modalContent"></div></div>
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="replace" offset="1"><![CDATA[<?php foreach ($orders as $order) { ?>]]></search>
+      <add><![CDATA[<?php foreach ($orders as $order) { ?>
+      <tr <?php if (!empty($qosu_bg_mode) && ($qosu_bg_mode == 'row') && isset($qosu_os[$order['order_status_id']]['color']) && $qosu_os[$order['order_status_id']]['color'] != '#000000') { echo ' style="background-color:' . (isset($qosu_os[$order['order_status_id']]['color']) ? $qosu_os[$order['order_status_id']]['color'] : '') . '"'; } ?>>
+      ]]></add>
+    </operation>
+    <operation error="skip">
+      <search position="replace"><![CDATA[<div class="table-responsive">]]></search>
+      <add><![CDATA[<div class="table-responsive qosuTable">]]></add>
+    </operation>
+    <operation error="skip">
+      <search position="replace"><![CDATA[<td><?php echo $order['status']; ?></td>]]></search>
+      <add><![CDATA[<td class="text-center qosu-cell" order_id="<?php echo $order['order_id']; ?>" <?php if (!empty($qosu_bg_mode) && ($qosu_bg_mode == 'cell') && isset($qosu_os[$order['order_status_id']]['color']) && $qosu_os[$order['order_status_id']]['color'] != '#000000') { echo ' style="background-color:' . (isset($qosu_os[$order['order_status_id']]['color']) ? $qosu_os[$order['order_status_id']]['color'] : '') . '"'; } ?> title="<?php echo $text_qosu_add_history; ?>">
+        <?php
+          $btn_class = array(
+            'Pending'     => 'btn-default',
+            'Approved'    => 'btn-default',
+            'Processing'  => 'btn-warning',
+            'On Hold'     => 'btn-warning',
+            'Packing'     => 'btn-success',
+            'Shipped'     => 'btn-primary',
+            'Cancelled'   => 'btn-info',
+            'Refunded'    => 'btn-info',
+            'Void'        => 'btn-danger'
+          );
+        ?>
+        <a class="btn btn-xs <?php echo $btn_class[$order['status']]; ?>"><i class="fa fa-arrow-circle-right"></i> <?php echo $order['status']; ?></a>
+      </td>
+      ]]></add>
+    </operation>
+    <!-- original qosu
+          <?php if(empty($qosu_bg_mode) && isset($qosu_os[$order['order_status_id']]['color']) && $qosu_os[$order['order_status_id']]['color'] != '#000000') { ?>
+              <font color="<?php echo $qosu_os[$order['order_status_id']]['color']; ?>"><?php echo $order['status']; ?></font>
+          <?php } else { ?>
+              <?php echo $order['status']; ?>
+          <?php } ?>
+    -->
+    <operation>
+      <search position="before" index="1"><![CDATA[<div]]></search>
+      <add><![CDATA[
+      <script type="text/javascript"><!--
+      // global var definition for later use
+      var current_order_ids = [];
+
+      // highlight method
+      jQuery.fn.qosu_highlight = function () {
+        $(this).each(function () {
+          var el = $(this);
+          $("<div/>")
+          .width(el.outerWidth())
+          .height(el.outerHeight())
+          .addClass('bg-info')
+          .css({
+            "position": "absolute",
+            "left": el.offset().left,
+            "top": el.offset().top,
+            "opacity": "0.8",
+            "z-index": "99999"
+          }).appendTo('body').fadeOut(500).queue(function () { $(this).remove(); });
+        });
+      }
+
+      $(document).ready(function() {
+        //draggable modal
+        var qosu_modal = {isMouseDown: false, mouseOffset: {} };
+        $('body').on('mousedown', '.modal-header', function(event) {
+          qosu_modal.isMouseDown = true;
+          var dialogOffset = $('#quick-status-dialog .modal-dialog').offset();
+          qosu_modal.mouseOffset = {
+            top: event.clientY - dialogOffset.top,
+            left: event.clientX - dialogOffset.left
+          };
+          $('body').on('mousemove', '#quick-status-dialog', function(event) {
+            if (!qosu_modal.isMouseDown) { return; }
+            $('#quick-status-dialog .modal-dialog').offset({
+              top: event.clientY - qosu_modal.mouseOffset.top,
+              left: event.clientX - qosu_modal.mouseOffset.left
+            });
+          });
+        });
+        $('body').on('mouseup', '#quick-status-dialog', function(event) {
+          qosu_modal.isMouseDown = false;
+           $('body').off('mousemove', '#quick-status-dialog');
+        });
+        // end - draggable modal
+
+        $('body').on('click', '#qosuSubmit', function() {
+          quickStatusUpdate();
+        });
+
+        $('body').on('click', '#qosuSubmitClose', function() {
+          quickStatusUpdate(1);
+        });
+
+        $('body').on('click', '#history .pagination a', function() {
+          $('#history').load(this.href);
+          return false;
+        });
+
+        $('body').on('hidden.bs.modal', '#quick-status-dialog', function () {
+          current_order_ids = [];
+        });
+
+        // barcode handler
+        <?php if($qosu_barcode) { ?>
+        var barcode_id = '';
+
+        $('#qosuBarcodeButton').on('click', function(event) {
+          $(this).toggleClass('enabled');
+          if ($(this).hasClass('enabled')) {
+            $('body').on('keypress', function(e) {
+              if (jQuery.inArray( e.which-48, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] )  !== -1) {
+                barcode_id += e.which-48;
+              } else if (e.which == 13) {
+                if(barcode_id != '') {
+                  e.preventDefault();
+                  current_order_ids.push(barcode_id);
+                  barcode_id = '';
+                  $('body').trigger('qosuPopup');
+                }
+              }
+            });
+          } else {
+            $('body').off('keypress');
+          }
+        });
+        <?php if($qosu_barcode_enabled) { ?>
+        $('#qosuBarcodeButton').trigger('click');
+        <?php }} ?>
+        // end - barcode handler
+
+        $('body').on('click', '.quick-update-multiple, .qosu-cell', function(e) {
+          current_order_ids = [];
+
+          if ($(this).attr('order_id')) {
+            current_order_ids.push($(this).attr('order_id'));
+          } else if ($("input[name='selected[]']:checked").length == 1) {
+            current_order_ids.push($("input[name='selected[]']:checked").first().val());
+          } else if (!$("input[name='selected[]']:checked").length && <?php echo (int) (substr(VERSION, 0, 1) != 2); ?>) {
+            return alert('<?php echo $text_qosu_select_checkbox; ?>');
+          } else {
+            $("input[name='selected[]']:checked").each(function() {
+              current_order_ids.push($(this).val());
+            });
+          }
+
+          $('body').trigger('qosuPopup');
+        });
+
+        $('body').on('qosuPopup', function(e) {
+          if (!current_order_ids) alert('No order selected');
+
+          $('#quick-status-dialog .modalContent').html('<div style="text-align:center"><img src="<?php echo defined('_JEXEC') ? 'admin/' : ''; ?>view/quick_status_updater/img/loader.gif" alt=""/></div>');
+          $('#quick-status-dialog').modal({});
+
+          if (current_order_ids.length == 1) {
+            $('#quick-status-dialog .modalContent').load('index.php?route=module/quick_status_updater/multiple_form&token=<?php echo $token; ?>', {'selected': current_order_ids}, function() {
+              $('#history').load('index.php?route=sale/order/history&reverse&token=<?php echo $token; ?>&order_id='+current_order_ids[0]);
+              orderStatusChange();
+            });
+          } else {
+            $('#quick-status-dialog .modalContent').load('index.php?route=module/quick_status_updater/multiple_form&token=<?php echo $token; ?>', {'selected': current_order_ids}, function() {
+              orderStatusChange();
+            });
+          }
+        });
+      });
+
+      // submit form
+      function quickStatusUpdate(close) {
+        close || (close = 0);
+        if(typeof verifyStatusChange == 'function') {
+          if(verifyStatusChange() == false) {
+            return false;
+          } else {
+            addOrderInfo();
+          }
+        } else {
+          addOrderInfo();
+        }
+
+        $.ajax({
+          url: 'index.php?route=module/quick_status_updater/update_status&token=<?php echo $token; ?>',
+          type: 'post',
+          dataType: 'json',
+          data: $('form#qosu_form').serialize(),
+          beforeSend: function() {
+            $('.success, .warning').remove();
+            $('#button-history').attr('disabled', true);
+            $('#history').html('<div style="text-align:center"><img src="<?php echo defined('_JEXEC') ? 'admin/' : ''; ?>view/quick_status_updater/img/loader.gif" alt=""/></div>');
+          },
+          complete: function() {
+            $('#button-history').attr('disabled', false);
+            $('.attention').remove();
+          },
+          error: function(req, error) {
+            $('#history').html(error + '<br/>' + req.responseText);
+          },
+          success: function(json) {
+            if (json.error) {
+              $('#history').html(json.error);
+              //alert(json.error);
+            } else {
+              //$('#history').html(html);
+              //$('textarea[name=\'comment\']').val('');
+
+              var order_id;
+              $.each(json.order_id, function(i, v) {
+                if(json.bg_mode == 'row') {
+                  $('td.qosu-cell[order_id="'+v+'"]').html($('select[name=\'order_status_id\'] option:selected').text());
+                  $('td.qosu-cell[order_id="'+v+'"]').parent().css('background', json.color);
+                  $('td.qosu-cell[order_id="'+v+'"]').parent().qosu_highlight(1000);
+                } else if(json.bg_mode == 'cell') {
+                  $('td.qosu-cell[order_id="'+v+'"]').html($('select[name=\'order_status_id\'] option:selected').text());
+                  $('td.qosu-cell[order_id="'+v+'"]').css('background', json.color);
+                  $('td.qosu-cell[order_id="'+v+'"]').qosu_highlight(1000);
+                } else {
+                  var btnClass = {
+                    'Pending': 'btn-default',
+                    'Approved': 'btn-default',
+                    'Processing': 'btn-warning',
+                    'On Hold': 'btn-warning',
+                    'Packing': 'btn-success',
+                    'Shipped': 'btn-primary',
+                    'Cancelled': 'btn-info',
+                    'Refunded': 'btn-info',
+                    'Void': 'btn-danger'
+                  };
+                  $('td.qosu-cell[order_id="'+v+'"]').html('<a class="btn btn-xs ' + btnClass[$('select[name=\'order_status_id\'] option:selected').text()] + '"><i class="fa fa-arrow-circle-right"></i> ' + $('select[name=\'order_status_id\'] option:selected').text() + ' </a>');
+                  $('td.qosu-cell[order_id="'+v+'"]').qosu_highlight(1000);
+                }
+                $('td.qosu-cell[order_id="'+v+'"]').qosu_highlight(1000);
+                order_id = v;
+              });
+
+              if(close) {
+                current_order_ids = [];
+                $('#quick-status-dialog').modal('hide');
+              } else {
+                if (json.order_id.length > 1) {
+                  $('#history').html('');
+                } else {
+                  $('#history').load('index.php?route=sale/order/history&reverse&token=<?php echo $token; ?>&order_id='+order_id);
+                }
+              }
+            }
+          }
+        });
+      }
+
+      function orderStatusChange() {
+        var status_id = $('select[name="order_status_id"]').val();
+
+        // quick status updater
+        $.ajax({
+          url: 'index.php?route=module/quick_status_updater/getDefaultComment&token=<?php echo $token; ?>&status_id='+status_id,
+          type: 'post',
+          dataType: 'json',
+          beforeSend: function() {},
+          success: function(json) {
+            $.each(json, function(i, v) {
+              $('#quick-status-dialog textarea[name="comment['+ i +']"]').html(v);
+            });
+          },
+          failure: function() {},
+          error: function() {}
+        });
+
+        // openbay support, only if 1 order
+        if (current_order_ids.length == 1) {
+          $('#openbay-info').remove();
+
+          $.ajax({
+            url: 'index.php?route=extension/openbay/getorderinfo&token=<?php echo $token; ?>&order_id='+current_order_ids[0]+'&status_id='+status_id,
+            dataType: 'html',
+            success: function(html) {
+              $('#history').after(html);
+            }
+          });
+        }
+      }
+
+      function addOrderInfo() {
+        var status_id = $('select[name="order_status_id"]').val();
+        var old_status_id = $('#old_order_status_id').val();
+
+        $('#old_order_status_id').val(status_id);
+
+        // openbay handling
+        if (current_order_ids.length == 1) {
+          $.ajax({
+            url: 'index.php?route=extension/openbay/addorderinfo&token=<?php echo $token; ?>&order_id='+$('#quick-status-dialog input[name=\'order_id\']').val()+'&status_id='+status_id,
+            type: 'post',
+            dataType: 'html',
+            data: $(".openbayData").serialize()
+          });
+        }
+      }
+
+      $('body').on('change', 'select[name="order_status_id"]', function() {orderStatusChange();});
+      //--></script>
+      <style type="text/css">
+      <?php if ($qosu_bg_mode == 'row') { ?>
+      .qosuTable, .latest{color:#333;}
+      .list tbody td{background-color:transparent;}
+      <?php } ?>
+      .ui-dialog .ui-dialog-buttonpane{position: absolute; top: 30px; right:10px; background:transparent; border:0;}
+      .ui-dialog .ui-dialog-titlebar{margin-bottom: 5px;}
+      #qosuBarcodeButton{background:#ddd; border:1px solid #ccc; color:#333; outline:0;}
+      a#qosuBarcodeButton{margin-left:30px; margin-top:5px;}
+      button#qosuBarcodeButton{margin-top:-6px; padding: 6px 10px;}
+      button#qosuBarcodeButton i{font-size:14px;}
+      #qosuBarcodeButton.enabled, #qosuBarcodeButton:hover{background:#9FB9C4; border:1px solid #7CA0AF;}
+      #qosuBarcodeButton.enabled:hover{background:#9FB9C4; border:1px solid #7CA0AF;}
+      #qosuBarcodeButton:hover{background:#ccc; border:1px solid #bbb;}
+      #qosuBarcodeButton:active, #qosuBarcodeButton.enabled:active{background:#87B4C6; border:1px solid #77A7BA;}
+      </style>
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="admin/view/template/sale/order_list.tpl">
+    <!-- buttons -->
+    <operation error="skip">
+      <!-- yym_custom: place button before custom print buttons -->
+      <search position="before"><![CDATA[<div class="btn-group">]]></search>
+      <add><![CDATA[
+      <button id="btn-qosu-multiple" data-toggle="tooltip" title="<?php echo $text_qosu_add_history; ?>" class="btn btn-primary quick-update-multiple"><i class="fa fa-check"></i> <?php echo $text_qosu_add_history; ?></button>
+      ]]></add>
+    </operation>
+    <operation error="skip">
+      <search position="after"><![CDATA[$('#button-shipping, #button-invoice').prop('disabled', true);]]></search>
+      <add><![CDATA[$('#btn-qosu-multiple').prop('disabled', true);]]></add>
+    </operation>
+    <operation error="skip">
+      <search position="after"><![CDATA[$('#button-invoice').prop('disabled', false);]]></search>
+      <add><![CDATA[$('#btn-qosu-multiple').prop('disabled', false);]]></add>
+    </operation>
+    <!-- end buttons -->
+    <operation>
+      <search position="after"><![CDATA[<div id="content">]]></search>
+      <!-- yym_custom: fix span->div -->
+      <add><![CDATA[
+      <div class="modal fade" id="quick-status-dialog" tabindex="-1" role="dialog"><div class="modalContent"></div></div>
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="replace" offset="1"><![CDATA[<?php foreach ($orders as $order) { ?>]]></search>
+      <add><![CDATA[<?php foreach ($orders as $order) { ?>
+      <tr <?php if (!empty($qosu_bg_mode) && ($qosu_bg_mode == 'row') && isset($qosu_os[$order['order_status_id']]['color']) && $qosu_os[$order['order_status_id']]['color'] != '#000000') { echo ' style="background-color:' . (isset($qosu_os[$order['order_status_id']]['color']) ? $qosu_os[$order['order_status_id']]['color'] : '') . '"'; } ?>>
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="replace"><![CDATA[left"><?php echo $order['status']; ?></td>]]></search>
+      <add><![CDATA[center qosu-cell" order_id="<?php echo $order['order_id']; ?>" <?php if (!empty($qosu_bg_mode) && ($qosu_bg_mode == 'cell') && isset($qosu_os[$order['order_status_id']]['color']) && $qosu_os[$order['order_status_id']]['color'] != '#000000') { echo ' style="background-color:' . (isset($qosu_os[$order['order_status_id']]['color']) ? $qosu_os[$order['order_status_id']]['color'] : '') . '"'; } ?> title="<?php echo $text_qosu_add_history; ?>">
+        <?php
+          $btn_class = array(
+            'Pending'     => 'btn-default',
+            'Approved'    => 'btn-default',
+            'Processing'  => 'btn-warning',
+            'On Hold'     => 'btn-warning',
+            'Packing'     => 'btn-success',
+            'Shipped'     => 'btn-primary',
+            'Cancelled'   => 'btn-info',
+            'Refunded'    => 'btn-info',
+            'Void'        => 'btn-danger'
+          );
+        ?>
+        <a class="btn btn-xs <?php echo $btn_class[$order['status']]; ?>"><i class="fa fa-arrow-circle-right"></i> <?php echo $order['status']; ?></a>
+      </td>
+      ]]></add>
+    </operation>
+    <!-- original qosu
+      <?php if(empty($qosu_bg_mode) && isset($qosu_os[$order['order_status_id']]['color']) && $qosu_os[$order['order_status_id']]['color'] != '#000000') { ?>
+        <font color="<?php echo $qosu_os[$order['order_status_id']]['color']; ?>"><?php echo $order['status']; ?></font>
+      <?php } else { ?>
+        <?php echo $order['status']; ?>
+      <?php } ?>
+    -->
+    <operation>
+      <search position="replace"><![CDATA[<option value="<?php echo $order_status['order_status_id']; ?>"]]></search>
+      <add><![CDATA[<option value="<?php echo $order_status['order_status_id']; ?>" <?php if(isset($order_status['color']) && $order_status['color'] != '#000000') { ?>style="color:<?php echo $order_status['color']; ?>"<?php } ?>]]></add>
+    </operation>
+    <!--Barcode button-->
+    <operation error="skip">
+      <search position="after"><![CDATA[<?php echo $text_list; ?></h3>]]></search>
+      <add><![CDATA[
+      <?php if($qosu_barcode) { ?>
+      <button id="qosuBarcodeButton" data-toggle="tooltip" data-placement="left" class="btn pull-right" title="<?php echo $text_qosu_barcode; ?>"/><i class="fa fa-barcode"></i></button>
+      <?php } ?>
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="before"><![CDATA[<?php echo $footer; ?>]]></search>
+      <add><![CDATA[
+      <script type="text/javascript"><!--
+      // global var definition for later use
+      var current_order_ids = [];
+
+      // highlight method
+      jQuery.fn.qosu_highlight = function () {
+        $(this).each(function () {
+          var el = $(this);
+          $("<div/>")
+          .width(el.outerWidth())
+          .height(el.outerHeight())
+          .addClass('bg-info')
+          .css({
+            "position": "absolute",
+            "left": el.offset().left,
+            "top": el.offset().top,
+            "opacity": "0.8",
+            "z-index": "99999"
+          }).appendTo('body').fadeOut(500).queue(function () { $(this).remove(); });
+        });
+      }
+
+      $(document).ready(function() {
+        //draggable modal
+        var qosu_modal = {isMouseDown: false, mouseOffset: {} };
+        $('body').on('mousedown', '.modal-header', function(event) {
+          qosu_modal.isMouseDown = true;
+          var dialogOffset = $('#quick-status-dialog .modal-dialog').offset();
+          qosu_modal.mouseOffset = {
+            top: event.clientY - dialogOffset.top,
+            left: event.clientX - dialogOffset.left
+          };
+          $('body').on('mousemove', '#quick-status-dialog', function(event) {
+            if (!qosu_modal.isMouseDown) { return; }
+            $('#quick-status-dialog .modal-dialog').offset({
+              top: event.clientY - qosu_modal.mouseOffset.top,
+              left: event.clientX - qosu_modal.mouseOffset.left
+            });
+          });
+        });
+        $('body').on('mouseup', '#quick-status-dialog', function(event) {
+          qosu_modal.isMouseDown = false;
+           $('body').off('mousemove', '#quick-status-dialog');
+        });
+        // end - draggable modal
+
+        $('body').on('click', '#qosuSubmit', function() {
+          quickStatusUpdate();
+        });
+
+        $('body').on('click', '#qosuSubmitClose', function() {
+          quickStatusUpdate(1);
+        });
+
+        $('body').on('click', '#history .pagination a', function() {
+          $('#history').load(this.href);
+          return false;
+        });
+
+        $('body').on('hidden.bs.modal', '#quick-status-dialog', function () {
+          current_order_ids = [];
+        });
+
+        // barcode handler
+        <?php if($qosu_barcode) { ?>
+        var barcode_id = '';
+
+        $('#qosuBarcodeButton').on('click', function(event) {
+          $(this).toggleClass('enabled');
+          if ($(this).hasClass('enabled')) {
+            $('body').on('keypress', function(e) {
+              if (jQuery.inArray( e.which-48, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] )  !== -1) {
+                barcode_id += e.which-48;
+              } else if (e.which == 13) {
+                if(barcode_id != '') {
+                  e.preventDefault();
+                  current_order_ids.push(barcode_id);
+                  barcode_id = '';
+                  $('body').trigger('qosuPopup');
+                }
+              }
+            });
+          } else {
+            $('body').off('keypress');
+          }
+        });
+        <?php if($qosu_barcode_enabled) { ?>
+        $('#qosuBarcodeButton').trigger('click');
+        <?php }} ?>
+        // end - barcode handler
+
+        $('body').on('click', '.modalContent', function(e) {
+          if ($(e.target).attr('class') == 'modalContent') {
+            $('#quick-status-dialog').modal('hide');
+          }
+        });
+
+        $('body').on('click', '.quick-update-multiple, .qosu-cell', function(e) {
+          current_order_ids = [];
+
+          if ($(this).attr('order_id')) {
+            current_order_ids.push($(this).attr('order_id'));
+          } else if ($("input[name='selected[]']:checked").length == 1) {
+            current_order_ids.push($("input[name='selected[]']:checked").first().val());
+          } else if (!$("input[name='selected[]']:checked").length && <?php echo (int) (substr(VERSION, 0, 1) != 2); ?>) {
+            return alert('<?php echo $text_qosu_select_checkbox; ?>');
+          } else {
+            $("input[name='selected[]']:checked").each(function() {
+              current_order_ids.push($(this).val());
+            });
+          }
+
+          $('body').trigger('qosuPopup');
+        });
+
+        $('body').on('qosuPopup', function(e) {
+          if (!current_order_ids) alert('No order selected');
+
+          $('#quick-status-dialog .modalContent').html('<div style="text-align:center"><img src="<?php echo defined('_JEXEC') ? 'admin/' : ''; ?>view/quick_status_updater/img/loader.gif" alt=""/></div>');
+          $('#quick-status-dialog').modal({});
+
+          if (current_order_ids.length == 1) {
+            $('#quick-status-dialog .modalContent').load('index.php?route=module/quick_status_updater/multiple_form&token=<?php echo $token; ?>', {'selected': current_order_ids}, function() {
+              $('#history').load('index.php?route=sale/order/history&reverse&token=<?php echo $token; ?>&order_id='+current_order_ids[0]);
+              orderStatusChange();
+            });
+          } else {
+            $('#quick-status-dialog .modalContent').load('index.php?route=module/quick_status_updater/multiple_form&token=<?php echo $token; ?>', {'selected': current_order_ids}, function() {
+              orderStatusChange();
+            });
+          }
+        });
+      });
+
+      // submit form
+      function quickStatusUpdate(close) {
+        close || (close = 0);
+        if(typeof verifyStatusChange == 'function') {
+          if(verifyStatusChange() == false) {
+            return false;
+          } else {
+            addOrderInfo();
+          }
+        } else {
+          addOrderInfo();
+        }
+
+        $.ajax({
+          url: 'index.php?route=module/quick_status_updater/update_status&token=<?php echo $token; ?>',
+          type: 'post',
+          dataType: 'json',
+          data: $('form#qosu_form').serialize(),
+          beforeSend: function() {
+            $('.success, .warning').remove();
+            $('#button-history').attr('disabled', true);
+            $('#history').html('<div style="text-align:center"><img src="<?php echo defined('_JEXEC') ? 'admin/' : ''; ?>view/quick_status_updater/img/loader.gif" alt=""/></div>');
+          },
+          complete: function() {
+            $('#button-history').attr('disabled', false);
+            $('.attention').remove();
+          },
+          error: function(req, error) {
+            $('#history').html(error + '<br/>' + req.responseText);
+          },
+          success: function(json) {
+            if (json.error) {
+              $('#history').html(json.error);
+              //alert(json.error);
+            } else {
+              //$('#history').html(html);
+              //$('textarea[name=\'comment\']').val('');
+
+              var order_id;
+
+              $.each(json.order_id, function(i, v) {
+                if(json.bg_mode == 'row') {
+                  $('td.qosu-cell[order_id="'+v+'"]').html($('select[name=\'order_status_id\'] option:selected').text());
+                  $('td.qosu-cell[order_id="'+v+'"]').parent().css('background', json.color);
+                  $('td.qosu-cell[order_id="'+v+'"]').parent().qosu_highlight(1000);
+                } else if(json.bg_mode == 'cell') {
+                  $('td.qosu-cell[order_id="'+v+'"]').html($('select[name=\'order_status_id\'] option:selected').text());
+                  $('td.qosu-cell[order_id="'+v+'"]').css('background', json.color);
+                  $('td.qosu-cell[order_id="'+v+'"]').qosu_highlight(1000);
+                } else {
+                  var btnClass = {
+                    'Pending': 'btn-default',
+                    'Approved': 'btn-default',
+                    'Processing': 'btn-warning',
+                    'On Hold': 'btn-warning',
+                    'Packing': 'btn-success',
+                    'Shipped': 'btn-primary',
+                    'Cancelled': 'btn-info',
+                    'Refunded': 'btn-info',
+                    'Void': 'btn-danger'
+                  };
+                  $('td.qosu-cell[order_id="'+v+'"]').html('<a class="btn btn-xs ' + btnClass[$('select[name=\'order_status_id\'] option:selected').text()] + '"><i class="fa fa-arrow-circle-right"></i> ' + $('select[name=\'order_status_id\'] option:selected').text() + ' </a>');
+                  $('td.qosu-cell[order_id="'+v+'"]').qosu_highlight(1000);
+                }
+                $('td.qosu-cell[order_id="'+v+'"]').qosu_highlight(1000);
+                order_id = v;
+              });
+
+              if(close) {
+                current_order_ids = [];
+                $('#quick-status-dialog').modal('hide');
+              } else {
+                if (json.order_id.length > 1) {
+                  $('#history').html('');
+                } else {
+                  $('#history').load('index.php?route=sale/order/history&reverse&token=<?php echo $token; ?>&order_id='+order_id);
+                }
+              }
+            }
+          }
+        });
+      }
+
+      function orderStatusChange() {
+        var status_id = $('select[name="order_status_id"]').val();
+
+        // quick status updater
+        $.ajax({
+          url: 'index.php?route=module/quick_status_updater/getDefaultComment&token=<?php echo $token; ?>&status_id='+status_id,
+          type: 'post',
+          dataType: 'json',
+          beforeSend: function() {},
+          success: function(json) {
+            $.each(json, function(i, v) {
+              $('#quick-status-dialog textarea[name="comment['+ i +']"]').html(v);
+            });
+          },
+          failure: function() {},
+          error: function() {}
+        });
+
+        // openbay support, only if 1 order
+        if (current_order_ids.length == 1) {
+          $('#openbay-info').remove();
+
+          $.ajax({
+            url: 'index.php?route=extension/openbay/getorderinfo&token=<?php echo $token; ?>&order_id='+current_order_ids[0]+'&status_id='+status_id,
+            dataType: 'html',
+            success: function(html) {
+              $('#history').after(html);
+            }
+          });
+        }
+      }
+
+      function addOrderInfo() {
+        var status_id = $('select[name="order_status_id"]').val();
+        var old_status_id = $('#old_order_status_id').val();
+
+        $('#old_order_status_id').val(status_id);
+
+        // openbay handling
+        if (current_order_ids.length == 1) {
+          $.ajax({
+            url: 'index.php?route=extension/openbay/addorderinfo&token=<?php echo $token; ?>&order_id='+$('#quick-status-dialog input[name=\'order_id\']').val()+'&status_id='+status_id,
+            type: 'post',
+            dataType: 'html',
+            data: $(".openbayData").serialize()
+          });
+        }
+      }
+
+      $('body').on('change', 'select[name="order_status_id"]', function() {orderStatusChange();});
+      //--></script>
+      <style type="text/css">
+        <?php if ($qosu_bg_mode == 'row') { ?>
+        .table.table-bordered{color:#333;}
+        .list tbody td{background-color:transparent;}
+        <?php } ?>
+        .ui-dialog .ui-dialog-buttonpane{position: absolute; top: 30px; right:10px; background:transparent; border:0;}
+        .ui-dialog .ui-dialog-titlebar{margin-bottom: 5px;}
+        #qosuBarcodeButton{background:#ddd; border:1px solid #ccc; color:#333; outline:0;}
+        a#qosuBarcodeButton{margin-left:30px; margin-top:5px;}
+        button#qosuBarcodeButton{margin-top:-6px; padding: 6px 10px;}
+        button#qosuBarcodeButton i{font-size:14px;}
+        #qosuBarcodeButton.enabled, #qosuBarcodeButton:hover{background:#9FB9C4; border:1px solid #7CA0AF;}
+        #qosuBarcodeButton.enabled:hover{background:#9FB9C4; border:1px solid #7CA0AF;}
+        #qosuBarcodeButton:hover{background:#ccc; border:1px solid #bbb;}
+        #qosuBarcodeButton:active, #qosuBarcodeButton.enabled:active{background:#87B4C6; border:1px solid #77A7BA;}
+        /* fix for bootstrap 3.3.x */
+        .modal-backdrop {position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1001;}
+        .modalContent {position:relative; z-index: 1100;} /*fix for bootstrap 3.3.x */
+      </style>
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="admin/model/sale/order.php">
+    <operation>
+      <search position="replace"><![CDATA[o.date_added,]]></search>
+      <add><![CDATA[o.date_added, o.order_status_id,]]></add>
+    </operation>
+    <operation>
+      <search position="replace"><![CDATA[oh.date_added ASC]]></search>
+      <add><![CDATA[oh.date_added " . (isset($this->request->get['reverse']) ? 'DESC' : 'ASC') . "]]></add>
+    </operation>
+    <!-- yym_custom: modify qosu for oc_tracking_number -->
+    <operation>
+      <search position="before"><![CDATA[return array]]></search>
+      <add><![CDATA[
+      $this->load->model('module/quick_status_updater');
+      $tracking_numbers = $this->model_module_quick_status_updater->getTrackingNumbers($order_query->row['order_id']);
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="after"><![CDATA[=> $order_query->row['order_id'],]]></search>
+      <add><![CDATA[
+      'tracking_numbers'            => $tracking_numbers,
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="admin/model/localisation/order_status.php">
+    <operation>
+      <search position="after"><![CDATA[$order_status_data = $query->rows;]]></search>
+      <add><![CDATA[
+      // get order status options and order
+      $qosu_os = $this->config->get('qosu_order_statuses');
+      if($qosu_os) {
+        foreach($order_status_data as &$s) {
+          if(isset($qosu_os[$s['order_status_id']])) {
+            $s = $s + $qosu_os[$s['order_status_id']];
+          }
+        }
+        usort($order_status_data, array($this, 'cmp'));
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="before"><![CDATA[public function getOrderStatuses($data = array()) {]]></search>
+      <add><![CDATA[
+      private function cmp($a, $b) {
+        if (!isset($a['sort_order']) || !isset($b['sort_order'])) return 0;
+        if ($a['sort_order'] == $b['sort_order']) return 0;
+        return ($a['sort_order'] < $b['sort_order']) ? -1 : 1;
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="admin/controller/sale/order.php">
+    <operation>
+      <search position="before"><![CDATA[data['store_name'] = $order_info['store_name'];]]></search>
+      <add><![CDATA[
+      if (isset($order_info['tracking_numbers'])) {
+        $data['tracking_numbers'] = $order_info['tracking_numbers'];
+      }
+      ]]></add>
+    </operation>
+    <!-- buttons -->
+    <operation>
+      <search position="after"><![CDATA[public function index() {]]></search>
+      <add><![CDATA[		$this->load->language('module/quick_status_updater');]]></add>
+    </operation>
+    <operation>
+      <search position="after"><![CDATA[function getList() {]]></search>
+      <add><![CDATA[
+      $data['qosu_os'] = $qosu_os = $this->config->get('qosu_order_statuses');
+      $data['text_qosu_add_history'] = $this->language->get('text_qosu_add_history');
+      $data['text_qosu_dialog_title'] = $this->language->get('text_qosu_dialog_title');
+      $data['text_qosu_tracking_number'] = $this->language->get('text_qosu_tracking_number');
+      $data['text_qosu_select_checkbox'] = $this->language->get('text_qosu_select_checkbox');
+      $data['text_qosu_barcode'] = $this->language->get('text_qosu_barcode');
+      $data['qosu_bg_mode'] = $this->config->get('qosu_bg_mode');
+      $data['qosu_barcode'] = $this->config->get('qosu_barcode');
+      $data['qosu_barcode_enabled'] = $this->config->get('qosu_barcode_enabled');
+
+      $data['button_save'] = $this->config->get('button_save');
+      $data['button_cancel'] = $this->config->get('button_cancel');
+      $data['button_close'] = $this->config->get('button_close');
+      $data['text_wait'] = $this->config->get('text_wait');
+      ]]></add>
+    </operation>
+    <!-- buttons -->
+    <operation>
+      <search position="after"><![CDATA[=> $result['order_id'],]]></search>
+      <add><![CDATA[			'order_status_id'        => $result['order_status_id'],]]></add>
+    </operation>
+    <operation>
+      <search position="after"><![CDATA[public function index() {]]></search>
+      <add><![CDATA[
+      $this->load->model('localisation/order_status');
+      $data['order_statuses'] = $this->model_localisation_order_status->getOrderStatuses();
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="after"><![CDATA[$pagination->url = $this->url->link('sale/order/history']]></search>
+      <add><![CDATA[
+      if(isset($this->request->get['reverse'])) {
+        $pagination->url = $this->url->link('sale/order/history', 'reverse&token=' . $this->session->data['token'] . '&order_id=' . $this->request->get['order_id'] . '&page={page}', 'SSL');
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="catalog/model/account/order.php">
+    <operation>
+      <search position="before"><![CDATA[return array]]></search>
+      <add><![CDATA[
+      $tracking_numbers = $this->db->query("SELECT tn.number, tn.note, tmd.description, tmd.href FROM " . DB_PREFIX . "tracking_number tn LEFT JOIN " . DB_PREFIX . "tracking_method_description tmd ON (tn.tracking_method_id = tmd.tracking_method_id) WHERE tn.order_id = " . (int)$order_id . " AND tmd.language_id = " . (int)$this->config->get('config_language_id'))->rows;
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="after"><![CDATA[=> $order_query->row['order_id'],]]></search>
+      <add><![CDATA[
+      'tracking_numbers'        => $tracking_numbers,
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- yym_custom: remove tracking_no, tracking_url from checkout/order
+  <file name="catalog/model/checkout/order.php">
+    <operation>
+      <search position="after"><![CDATA[=> $order_query->row['store_id'],]]></search>
+      <add><![CDATA[
+      'tracking_no' => isset($order_query->row['tracking_no']) ? $order_query->row['tracking_no'] : '',
+      'tracking_url' => isset($order_query->row['tracking_url']) ? $order_query->row['tracking_url'] : '',
+      ]]></add>
+    </operation>
+  </file>
+  -->
+
+  <file name="catalog/controller/account/order.php">
+    <operation>
+      <search position="after"><![CDATA[public function info() {]]></search>
+      <add><![CDATA[
+      $this->language->load('module/quick_status_updater');
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="after"><![CDATA[data['comment'] = nl2br($order_info['comment']);]]></search>
+      <add><![CDATA[
+        $data['text_tracking_number'] = $this->language->get('text_tracking_number');
+        $data['text_tracking_method'] = $this->language->get('text_tracking_method');
+        $data['text_tracking_note'] = $this->language->get('text_tracking_note');
+        $data['tracking_numbers'] = $order_info['tracking_numbers'];
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="catalog/view/theme/stowear/template/account/order_info.tpl">
+    <operation>
+      <search position="before"><![CDATA[<?php if ($histories) { ?>]]></search>
+      <add><![CDATA[
+      <?php if (count($tracking_numbers)) { ?>
+      <table class="table table-bordered table-hover list">
+        <thead>
+          <tr>
+            <td class="text-left" style="white-space:nowrap"><?php echo $text_tracking_number; ?></td>
+            <td class="text-left" style="white-space:nowrap"><?php echo $text_tracking_method; ?></td>
+            <td class="text-left"><?php echo $text_tracking_note; ?></td>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($tracking_numbers as $tracking_number) {?>
+          <tr>
+            <td class="text-left" style="white-space:nowrap">
+              <?php echo $tracking_number['number']; ?>
+            </td>
+            <td class="text-left" style="white-space:nowrap">
+              <?php if (strpos($tracking_number['href'], 'http') !== false) { ?>
+              <a href="<?php echo $tracking_number['href']; ?>" target="new"><?php echo $tracking_number['description']; ?> <i class="fa fa-external-link"></i></a>
+              <?php } else { ?>
+              <?php echo $tracking_number['description']; ?>
+              <?php } ?>
+            </td>
+            <td class="text-left">
+              <?php echo $tracking_number['note']; ?>
+              <?php if (strpos($tracking_number['href'], 'http') === false) { ?>
+              <?php echo ' ' . $tracking_number['href']; ?>
+              <?php } ?>
+            </td>
+          </tr>
+          <?php } ?>
+        </tbody>
+      </table>
+      <?php } ?>
+      ]]></add>
+    </operation>
+  </file>
+
+</modification>

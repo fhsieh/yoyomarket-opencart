@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+  <name>GGW Flexi Rewards</name>
+  <code>ggw_flexi_rewards</code>
+  <version>3.0.1</version>
+  <author>Go Go Web</author>
+  <link>http://www.go-go-web.com</link>
+
+  <!-- Add auto rewards on standard history update -->
+  <file path="admin/controller/sale/order.php">
+    <operation>
+      <search index="6"><![CDATA[$this->response->addHeader('Content-Type: application/json');]]></search>
+      <add position="before"><![CDATA[
+      // ggw_flexi_rewards
+      if($this->request->get['api'] == 'api/order/history' && $this->request->get['order_id'] > 0 && isset($this->request->post['order_status_id'])) {
+        $res = json_decode($json);
+
+        if(isset($res->success)){
+          $this->load->model('sale/order');
+
+          if (isset($this->request->get['order_id'])) {
+            $order_id = $this->request->get['order_id'];
+          } else {
+            $order_id = 0;
+          }
+
+          $order_info = $this->model_sale_order->getOrder($order_id);
+          $ggw_post = $this->request->post;
+          $this->load->model('setting/flexi_reward');
+
+          $flexi = $this->model_setting_flexi_reward->getFlexi($order_info['customer_group_id']);
+
+          if ($flexi && $ggw_post['order_status_id'] == $flexi['flexi_reward_order_status']) {
+            $succtext = $this->model_setting_flexi_reward->addReward($this->request->get['order_id']);
+          } elseif($flexi && $ggw_post['order_status_id'] != $flexi['flexi_reward_order_status']) {
+            $this->model_setting_flexi_reward->deleteRewardHook($this->request->get['order_id']);
+            $this->model_setting_flexi_reward->deleteRewardFirstOrder($order_info['customer_id'],$order_info['customer_group_id'] );
+          }
+        }
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- Add auto rewards on quick order status update history update -->
+  <file path="admin/controller/module/quick_status_updater.php">
+    <operation>
+      <search><![CDATA[$res = $this->api('api/order/history&order_id='.$order_id, $post_data);]]></search>
+      <add position="before" offset="1"><![CDATA[
+      // ggw_flexi_rewards
+      if(isset($this->request->post['order_status_id'])) {
+        $this->load->model('setting/flexi_reward');
+        $flexi = $this->model_setting_flexi_reward->getFlexi($order_info['customer_group_id']);
+
+        if ($flexi && $this->request->post['order_status_id'] == $flexi['flexi_reward_order_status']) {
+          $succtext = $this->model_setting_flexi_reward->addReward($order_id);
+        } elseif($flexi && $this->request->post['order_status_id'] != $flexi['flexi_reward_order_status']) {
+          $this->model_setting_flexi_reward->deleteRewardHook($order_id);
+          $this->model_setting_flexi_reward->deleteRewardFirstOrder($order_info['customer_id'],$order_info['customer_group_id'] );
+        }
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/model/sale/order.php">
+    <operation>
+      <search><![CDATA[return array(]]></search>
+      <add position="before"><![CDATA[
+      // ggw_flexi_rewards
+      $this->load->model('setting/flexi_reward');
+      $reward = $this->model_setting_flexi_reward->calcReward($order_query->row['order_id'],$order_query->row['customer_group_id']);
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="system/library/cart.php">
+    <operation>
+      <search><![CDATA[ function getProducts()]]></search>
+      <add position="before"><![CDATA[
+      // ggw_flexi_rewards
+      public function getModulesByCode($code) {
+        $query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "module` WHERE `code` = '" . $this->db->escape($code) . "' ORDER BY `name`");
+        return $query->rows;
+      }
+
+      public function getModuleInstances($code) {
+        $modules = $this->getModulesByCode($code);
+        foreach ($modules as $key => $module) {
+          $modules[$key]['setting'] = $m = unserialize($module['setting']);
+          if($modules[$key]['setting'][$code.'_status'] != 1) unset($modules[$key]);
+        }
+        $this->instances[$code] = $modules;
+        return $modules;
+      }
+
+      public function getFlexi($customer_group = 1) {
+        $code = 'flexi_reward';
+        $customer_group = $this->customer->getGroupId() ? $this->customer->getGroupId() : (int)$this->config->get('config_customer_group_id');
+        $instances = isset($this->instances[$code]) ? $this->instances[$code] : $this->getModuleInstances($code);
+
+        foreach ($instances as $module) {
+          if($module['setting']['flexi_reward_customer_groups'] == $customer_group) {
+            $settings = array(
+              "flexi_reward_rate" => $module['setting']['flexi_reward_rate'],
+              "flexi_purchase_rate" =>  $module['setting']['flexi_purchase_rate']
+            );
+          }
+        }
+
+        return isset($settings) ? $settings : false;
+      }
+      ]]></add>
+    </operation>
+
+    <operation>
+      <search><![CDATA[($product_query->row['points'] ? ($product_query->row['points'] + $option_points) * $quantity : 0),]]></search>
+      <add position="replace"><![CDATA[ $this->getFlexi() && ($flexi_sett = $this->getFlexi()) ? round(($price + $option_price) * $quantity)*$flexi_sett['flexi_purchase_rate'] : round(($price + $option_price) * $quantity),]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/checkout/reward.php">
+    <operation>
+      <search><![CDATA[if ($this->request->post['reward'] > $points) {]]></search>
+      <add position="before"><![CDATA[
+      // ggw_flexi_rewards
+      $this->load->language('module/flexi_reward');
+      $this->load->model('module/flexi_reward');
+
+      $flexi_settings = $this->model_module_flexi_reward->getFlexi();
+
+      if ($flexi_settings['flexi_minca'] > $points) {
+        $json['error'] = sprintf($this->language->get('error_flexi_minca_points'), $flexi_settings['flexi_minca']);
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/account/register.php">
+    <operation>
+      <search><![CDATA[$this->response->redirect($this->url->link('account/success'));]]></search>
+      <add position="before"><![CDATA[
+      // ggw_flexi_rewards
+      $this->load->language('module/flexi_reward');
+      $this->load->model('module/flexi_reward');
+
+      if($this->model_module_flexi_reward->getFlexi()) {
+        $this->model_module_flexi_reward->addReward('register');
+
+        if(isset($this->request->post['newsletter']) && $this->request->post['newsletter'] == '1') {
+          $this->model_module_flexi_reward->addReward('newsletter_sign_up');
+        }
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/account/newsletter.php">
+    <operation>
+      <search><![CDATA[$this->model_account_customer->editNewsletter($this->request->post['newsletter']);]]></search>
+      <add position="before"><![CDATA[
+      // ggw_flexi_rewards
+      $this->load->model('module/flexi_reward');
+
+      if($this->model_module_flexi_reward->getFlexi()) {
+        if(isset($this->request->post['newsletter']) && $this->request->post['newsletter'] == '1' && $this->customer->getNewsletter() < 1) {
+          $this->model_module_flexi_reward->addReward('newsletter_sign_up');
+        }
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/controller/catalog/review.php">
+    <operation>
+      <search><![CDATA[$this->model_catalog_review->editReview(]]></search>
+      <add position="after"><![CDATA[
+      // ggw_flexi_rewards
+      if($this->request->post['status'] == '1') {
+        $this->load->model('sale/customer');
+        $row = $this->model_catalog_review->getReview($this->request->get['review_id']);
+        $customer_id = $row['customer_id'];
+        $row = $this->model_sale_customer->getCustomer($customer_id);
+        $customer_group_id = $row['customer_group_id'];
+
+        $this->load->model('setting/flexi_reward');
+        if(($flexi_sett = $this->model_setting_flexi_reward->getFlexi($customer_group_id))  !== false) {
+          $this->model_setting_flexi_reward->addRewardReview(
+            $this->request->get['review_id'],
+            $this->request->post['product_id'],
+            $customer_id,
+            $customer_group_id,
+            $this->request->post['product']
+          );
+        }
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/account/reward.php">
+    <operation>
+      <search><![CDATA[foreach ($results as $result) {]]></search>
+      <add position="before"><![CDATA[
+      // ggw_flexi_rewards
+      if(count($results) > 0) {
+        $this->load->model('module/flexi_reward');
+        if($this->model_module_flexi_reward->getFlexi()) {
+          $rel_trans = $this->model_module_flexi_reward->rel_trans;
+        }
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/account/reward.php">
+    <operation>
+      <search><![CDATA[foreach ($results as $result) {]]></search>
+      <add position="after"><![CDATA[
+      // ggw_flexi_rewards
+      if(isset($rel_trans)) {
+        $rd = strtr($result['description'], $rel_trans);
+        $result['order_id'] = ($result['description'] != $rd) ? NULL : $result['order_id'];
+        $result['description'] = $rd;
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+</modification>

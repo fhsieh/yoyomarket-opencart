@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+  <id>Customer Group Discount</id>
+  <version>15.11.23</version>
+  <vqmver>2.4</vqmver>
+  <author>Zuma Design</author>
+
+  <file error="skip" name="admin/language/english/sale/customer_group.php">
+    <operation error="log">
+      <search position="after"><![CDATA[// Entry]]></search>
+      <add><![CDATA[
+      $_['text_group_discount']			= 'Group Discount';
+      $_['text_group_discount_amount']	= 'Discount Amount';
+      $_['text_group_discount_help']		= 'Applies to <i>every product</i> in all stores.  Negative values are allowed if you wish to increase price.  Individual product discounts will override this.';
+      ]]></add>
+    </operation>
+  </file>
+
+  <file error="skip" name="admin/view/template/sale/customer_group_form.tpl">
+    <operation error="log">
+      <search position="before" index="1"><![CDATA[$entry_sort_order]]></search>
+      <add><![CDATA[
+      <label class="col-sm-2 control-label" for="input-discount"><span data-toggle="tooltip" title="<?php echo htmlentities($text_group_discount_help); ?>"><?php echo $text_group_discount; ?></span></label>
+      <div class="col-sm-10">
+        <div class="row">
+          <div class="col-sm-3">
+            <select name="discount_prefix" class="form-control">
+              <option value="P" <?php if ($discount_prefix == 'P') { ?> selected="selected" <?php } ?>>Percentage</option>
+              <option value="F" <?php if ($discount_prefix == 'F') { ?> selected="selected" <?php } ?>>Flat Rate</option>
+            </select>
+          </div>
+          <div class="col-sm-6">
+            <input type="text" name="discount" value="<?php echo $discount; ?>" placeholder="<?php echo $text_group_discount_amount; ?>" class="form-control" />
+          </div>
+          <div class="col-sm-3">
+            <select name="discount_type" class="form-control">
+              <option value="D" <?php if ($discount_type == 'D') { ?> selected="selected" <?php } ?>>Show as Discount</option>
+              <option value="P" <?php if ($discount_type == 'P') { ?> selected="selected" <?php } ?>>Show as Price</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      ]]></add>
+    </operation>
+  </file>
+
+  <file error="skip" name="admin/controller/sale/customer_group.php">
+    <operation error="log">
+      <search position="after"><![CDATA[public function index()]]></search>
+      <add><![CDATA[
+      $query = $this->db->query("SHOW TABLES LIKE '" . DB_PREFIX . "customer_group_discount'");
+      if (!$query->rows) {
+        $this->db->query("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "customer_group_discount` (
+          `customer_group_id` int(11) NOT NULL,
+          `discount` decimal(6,2) NOT NULL DEFAULT '0',
+          `discount_prefix` varchar(1) NOT NULL DEFAULT 'P',
+          `discount_type` varchar(1) NOT NULL DEFAULT 'D',
+          PRIMARY KEY (`customer_group_id`)
+          ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci");
+      }
+      ]]></add>
+    </operation>
+    <operation error="log">
+      <search position="after"><![CDATA[protected function getForm()]]></search>
+      <add><![CDATA[
+      $data['text_group_discount'] = $this->language->get('text_group_discount');
+      $data['text_group_discount_help'] = $this->language->get('text_group_discount_help');
+      $data['text_group_discount_amount'] = $this->language->get('text_group_discount_amount');
+      ]]></add>
+    </operation>
+    <operation error="log">
+      <search position="before"><![CDATA[(isset($this->request->post['sort_order']))]]></search>
+      <add><![CDATA[
+      if (isset($this->request->post['discount'])) {
+        $data['discount'] = $this->request->post['discount'];
+      } elseif (!empty($customer_group_discount)) {
+        $data['discount'] = $customer_group_discount['discount'];
+      } else {
+        $data['discount'] = '';
+      }
+      if (isset($this->request->post['discount_prefix'])) {
+        $data['discount_prefix'] = $this->request->post['discount_prefix'];
+      } elseif (!empty($customer_group_discount)) {
+        $data['discount_prefix'] = $customer_group_discount['discount_prefix'];
+      } else {
+        $data['discount_prefix'] = '';
+      }
+      if (isset($this->request->post['discount_type'])) {
+        $data['discount_type'] = $this->request->post['discount_type'];
+      } elseif (!empty($customer_group_discount)) {
+        $data['discount_type'] = $customer_group_discount['discount_type'];
+      } else {
+        $data['discount_type'] = '';
+      }
+      ]]></add>
+    </operation>
+    <operation error="log">
+      <search position="after"><![CDATA[$this->model_sale_customer_group->getCustomerGroup($this->request->get['customer_group_id']);]]></search>
+      <add><![CDATA[
+      $customer_group_discount = $this->model_sale_customer_group->getCustomerGroupDiscount($this->request->get['customer_group_id']);
+      ]]></add>
+    </operation>
+  </file>
+
+  <file error="skip" name="admin/model/sale/customer_group.php">
+    <operation error="log">
+      <search position="before"><![CDATA[foreach ($data['customer_group_description'] as $language_id => $value)]]></search>
+      <add><![CDATA[
+      $this->db->query("DELETE FROM " . DB_PREFIX . "customer_group_discount WHERE customer_group_id = '" . (int)$customer_group_id . "'");
+      if ($data['discount'] > 0 || $data['discount'] < 0) {
+        $this->db->query("INSERT INTO " . DB_PREFIX . "customer_group_discount SET customer_group_id = '" . (int)$customer_group_id . "', discount = '" . (float)$data['discount'] . "', discount_prefix = '" . $this->db->escape($data['discount_prefix']) . "', discount_type = '" . $this->db->escape($data['discount_type']) . "'");
+      }
+      ]]></add>
+    </operation>
+    <operation error="log">
+      <search position="after"><![CDATA[public function deleteCustomerGroup]]></search>
+      <add><![CDATA[
+      $this->db->query("DELETE FROM " . DB_PREFIX . "customer_group_discount WHERE customer_group_id = '" . (int)$customer_group_id . "'");
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="before"><![CDATA[public function getTotalCustomerGroups()]]></search>
+      <add><![CDATA[
+      public function getCustomerGroupDiscount($customer_group_id) {
+        $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "customer_group_discount WHERE customer_group_id = '" . (int)$customer_group_id . "'");
+        return $query->row;
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="catalog/model/catalog/product.php">
+    <operation error="log">
+      <search position="after" offset="1"><![CDATA[function getProduct($product_id) {]]></search>
+      <add><![CDATA[
+      if ($query->num_rows && !$query->row['special']) {
+        $group_discount_query = $this->db->query("SELECT * FROM " . DB_PREFIX . "customer_group_discount WHERE customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "'");
+        if ($group_discount_query->num_rows && strpos($query->row['model'], 'IKEA-') === false && $group_discount_query->row['discount'] != 0 && !$query->row['discount']) {
+          if ($group_discount_query->row['discount_prefix'] == 'F') {
+            $discountprice = $query->row['price'] - $group_discount_query->row['discount'];
+            if ($discountprice < 0) { $discountprice = 0; }
+          } elseif ($group_discount_query->row['discount_prefix'] == 'P') {
+            $discountprice = $query->row['price'] - (($query->row['price'] * $group_discount_query->row['discount']) / 100);
+          } else {
+            $discountprice = $query->row['price'];
+          }
+          if ($group_discount_query->row['discount_type'] == 'D') {
+            $query->row['special'] = $discountprice;
+          } else {
+            $query->row['price'] = $discountprice;
+          }
+        }
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="system/library/cart.php">
+    <operation error="log">
+      <search position="before"><![CDATA[// Reward Points]]></search>
+      <add><![CDATA[
+      // Customer Group Discount
+      $group_discount_query = $this->db->query("SELECT * FROM " . DB_PREFIX . "customer_group_discount WHERE customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "'");
+      if (!$product_discount_query->num_rows && !$product_special_query->num_rows && $group_discount_query->num_rows && $group_discount_query->row['discount'] != 0 && !$product_discount_query->num_rows) {
+        if ($group_discount_query->row['discount_prefix'] == 'F') {
+          $price = $product_query->row['price'] - $group_discount_query->row['discount'];
+          if ($price < 0) { $price = 0; }
+        } elseif ($group_discount_query->row['discount_prefix'] == 'P') {
+          $price = $product_query->row['price'] - (($product_query->row['price'] * $group_discount_query->row['discount']) / 100);
+        }
+      }
+      ]]></add>
+    </operation>
+  </file>
+</modification>

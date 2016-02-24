@@ -1,0 +1,377 @@
+<modification>
+
+	<id>Quick Edit Products</id>
+	<version>1.4.0</version>
+	<vqmver>2.5.0</vqmver>
+	<author>bull5-i</author>
+
+	<file name="admin/controller/design/layout.php">
+		<operation info="Hack: filter out PQE from modules list" error="log">
+			<search position="after"><![CDATA[foreach ($extensions as $code)]]></search>
+			<add><![CDATA[
+			if ($code == 'admin_quick_edit') continue;
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/controller/extension/module.php">
+		<operation info="Add extension status constant">
+			<search position="after"><![CDATA[function index]]></search>
+			<add><![CDATA[      if ($this->config->get('aqe_installed')) { define("AQE_STATUS", $this->config->get('aqe_status')); }]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/model/tool/event.php" error="skip">
+		<operation info="Add method for retrieving event by code for OC 2.0.0.x">
+			<ignoreif><![CDATA[public function getEvent($code)]]></ignoreif>
+			<search position="after"><![CDATA[ModelToolEvent extends Model]]></search>
+			<add><![CDATA[
+	public function getEvent($code) {
+		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "event WHERE `code` = '" . $this->db->escape($code) . "'");
+
+		return $query->row;
+	}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/model/extension/event.php" error="skip">
+		<operation info="Add method for retrieving event by code for OC 2.0.1.0+">
+			<ignoreif><![CDATA[public function getEvent($code)]]></ignoreif>
+			<search position="after"><![CDATA[ModelExtensionEvent extends Model]]></search>
+			<add><![CDATA[
+	public function getEvent($code) {
+		$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "event WHERE `code` = '" . $this->db->escape($code) . "'");
+
+		return $query->row;
+	}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/model/localisation/tax_class.php">
+		<operation info="Delete PQEP tax class cache" error="log">
+			<search position="after" regex="true"><![CDATA[~function (add|edit|delete)TaxClass\(~]]></search>
+			<add><![CDATA[
+		$this->cache->delete('tax_classes');
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/model/catalog/filter.php" error="skip">
+		<operation info="Add function to count all filters">
+			<ignoreif><![CDATA[function getTotalFilters(]]></ignoreif>
+			<search position="before"><![CDATA[function getTotalFilterGroups]]></search>
+			<add><![CDATA[
+	public function getTotalFilters() {
+		$query = $this->db->query("SELECT COUNT(*) AS total FROM `" . DB_PREFIX . "filter`");
+
+		return $query->row['total'];
+	}
+			]]></add>
+		</operation>
+		<operation info="Add function to get filters by group">
+			<ignoreif><![CDATA[function getFiltersByGroup(]]></ignoreif>
+			<search position="before"><![CDATA[function getTotalFilterGroups]]></search>
+			<add><![CDATA[
+	public function getFiltersByGroup($data = array()) {
+		$sql = "SELECT fg.filter_group_id, fgd.name AS group_name, f.filter_id, fd.name AS filter_name FROM " . DB_PREFIX . "filter_group fg LEFT JOIN " . DB_PREFIX . "filter_group_description fgd ON (fg.filter_group_id = fgd.filter_group_id AND fgd.language_id = '" . (int)$this->config->get('config_language_id') . "') LEFT JOIN " . DB_PREFIX . "filter f ON (fg.filter_group_id = f.filter_group_id) LEFT JOIN " . DB_PREFIX . "filter_description fd ON (f.filter_id = fd.filter_id AND fd.language_id = '" . (int)$this->config->get('config_language_id') . "')";
+
+		if ($data) {
+			$conditions = array();
+
+			if (isset($data['filter_group_id'])) {
+				$conditions[] = "fg.filter_group_id = '" . (int)$data['filter_group_id'] . "'";
+			}
+
+			if (!empty($data['filter_name'])) {
+				$conditions[] = "fd.name LIKE '%" . $this->db->escape($data['filter_name']) . "%'";
+			}
+
+			if (!empty($data['filter_group_name'])) {
+				$conditions[] = "fgd.name LIKE '%" . $this->db->escape($data['filter_group_name']) . "%'";
+			}
+
+			if ($conditions) {
+				$sql .= " WHERE " . implode(' AND ', $conditions);
+			}
+		}
+
+		$sql .= " ORDER BY fg.sort_order ASC, f.sort_order ASC";
+
+		$query = $this->db->query($sql);
+
+		$data = array();
+
+		$current_group = null;
+		$idx = -1;
+
+		foreach($query->rows as $row) {
+			if (is_null($current_group) || $current_group != $row['filter_group_id']) {
+				$data[++$idx] = array(
+					'filter_group_id'   => $row['filter_group_id'],
+					'name'              => $row['group_name'],
+					'filters'           => array()
+				);
+				$current_group = $row['filter_group_id'];
+			}
+
+			$data[$idx]['filters'][] = array(
+				'filter_id' => $row['filter_id'],
+				'name'      => $row['filter_name']
+			);
+		}
+
+		return $data;
+	}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/model/catalog/attribute.php">
+		<operation info="Add function to get attributes by group">
+			<ignoreif><![CDATA[function getAttributesByGroup(]]></ignoreif>
+			<search position="before"><![CDATA[function getTotalAttributes(]]></search>
+			<add><![CDATA[
+	public function getAttributesByGroup($data = array()) {
+		$sql = "SELECT ag.attribute_group_id, agd.name AS group_name, a.attribute_id, ad.name AS attribute_name FROM " . DB_PREFIX . "attribute_group ag LEFT JOIN " . DB_PREFIX . "attribute_group_description agd ON (ag.attribute_group_id = agd.attribute_group_id AND agd.language_id = '" . (int)$this->config->get('config_language_id') . "') LEFT JOIN " . DB_PREFIX . "attribute a ON (ag.attribute_group_id = a.attribute_group_id) LEFT JOIN " . DB_PREFIX . "attribute_description ad ON (a.attribute_id = ad.attribute_id AND ad.language_id = '" . (int)$this->config->get('config_language_id') . "')";
+
+		if ($data) {
+			$conditions = array();
+
+			if (isset($data['filter_group_id'])) {
+				$conditions[] = "ag.attribute_group_id = '" . (int)$data['filter_group_id'] . "'";
+			}
+
+			if (!empty($data['filter_name'])) {
+				$conditions[] = "ad.name LIKE '%" . $this->db->escape($data['filter_name']) . "%'";
+			}
+
+			if (!empty($data['filter_group_name'])) {
+				$conditions[] = "agd.name LIKE '%" . $this->db->escape($data['filter_group_name']) . "%'";
+			}
+
+			if ($conditions) {
+				$sql .= " WHERE " . implode(' AND ', $conditions);
+			}
+		}
+
+		$sql .= " ORDER BY ag.sort_order ASC, a.sort_order ASC";
+
+		$query = $this->db->query($sql);
+
+		$data = array();
+
+		$current_group = null;
+		$idx = -1;
+
+		foreach($query->rows as $row) {
+			if (is_null($current_group) || $current_group != $row['attribute_group_id']) {
+				$data[++$idx] = array(
+					'attribute_group_id'=> $row['attribute_group_id'],
+					'name'              => $row['group_name'],
+					'attributes'        => array()
+				);
+				$current_group = $row['attribute_group_id'];
+			}
+
+			$data[$idx]['attributes'][] = array(
+				'attribute_id'  => $row['attribute_id'],
+				'name'          => $row['attribute_name']
+			);
+		}
+
+		return $data;
+	}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/controller/catalog/product.php">
+		<operation info="Update product cache">
+			<search position="after"><![CDATA[$this->model_catalog_product->editProduct(]]></search>
+			<add><![CDATA[
+			if ($this->config->get('aqe_status')) {
+				$this->load->model('catalog/product_ext');
+				$this->model_catalog_product_ext->updateProductCache($this->request->get['product_id'], $this->request->post);
+			}
+			]]></add>
+		</operation>
+		<operation info="Fix links back to the custom product list page">
+			<search position="replace"><![CDATA[$this->url->link('catalog/product', 'token=' . $this->session->data['token'] . $url,]]></search>
+			<add><![CDATA[$this->url->link(isset($this->request->post['aqe_redirect']) ? $this->request->post['aqe_redirect'] : (($this->config->get('aqe_status') && (!(int)$this->config->get('aqe_display_in_menu_as') || (isset($this->request->server['HTTP_REFERER']) && strpos($this->request->server['HTTP_REFERER'], 'catalog/product_ext') !== false))) ? 'catalog/product_ext' : 'catalog/product'), 'token=' . $this->session->data['token'] . $url . '&dTc=1',]]></add>
+		</operation>
+		<operation error="log" info="Fix for filter urls">
+			<search position="replace" regex="true"><![CDATA[~\$url \.= '&(.*?)=' \. \$this->request->get\['(.*?)'\];~]]></search>
+			<add><![CDATA[$url .= '&$1=' . urlencode(html_entity_decode($this->request->get['$2'], ENT_QUOTES, 'UTF-8'));]]></add>
+		</operation>
+		<operation error="log" info="Fix for filter urls">
+			<search position="after"><![CDATA[
+			function getForm()
+			]]></search>
+			<add><![CDATA[
+		if ($this->config->get('aqe_status')) {
+			if (isset($this->request->post['aqe_redirect'])) {
+				$data['aqe_redirect'] = $this->request->post['aqe_redirect'];
+			} else {
+				$data['aqe_redirect'] = (!(int)$this->config->get('aqe_display_in_menu_as') || (isset($this->request->server['HTTP_REFERER']) && strpos($this->request->server['HTTP_REFERER'], 'catalog/product_ext') !== false)) ? 'catalog/product_ext' : 'catalog/product';
+			}
+		}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/controller/common/filemanager.php">
+		<operation error="skip" info="Add image resizing method">
+			<ignoreif><![CDATA[
+			public function image
+			]]></ignoreif>
+			<search position="before"><![CDATA[public function index]]></search>
+			<add><![CDATA[
+	public function image() {
+		$this->load->model('tool/image');
+
+		if (isset($this->request->get['size'])) {
+			$width = $height = (int)$this->request->get['size'];
+		} else if (isset($this->request->get['width']) && isset($this->request->get['height'])) {
+			$width = (int)$this->request->get['width'];
+			$height = (int)$this->request->get['height'];
+		} else {
+			$width = $height = 100;
+		}
+
+		if (isset($this->request->get['image'])) {
+			$this->response->setOutput($this->model_tool_image->resize(html_entity_decode($this->request->get['image'], ENT_QUOTES, 'UTF-8'), $width, $height));
+		}
+	}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/controller/common/header.php">
+		<operation info="Point default Catalog > Product page to the custom page">
+			<search position="after"><![CDATA[
+			$data['product']
+			]]></search>
+			<add><![CDATA[
+		if ($this->config->get('aqe_status') && (int)$this->config->get('aqe_display_in_menu_as')) {
+			$data['product'] = $this->url->link('catalog/product_ext', 'token=' . $this->session->data['token'] . '&filter_quantity=0', 'SSL');
+		}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/controller/common/menu.php">
+		<operation info="Load 'Products (QE)' language string">
+			<search position="after"><![CDATA[
+			$data['text_product']
+			]]></search>
+			<add><![CDATA[		$data['text_product_qe'] = $this->language->get('text_product_qe');]]></add>
+		</operation>
+		<operation info="Point default Catalog > Product page to the custom page">
+			<search position="after"><![CDATA[
+			$data['product']
+			]]></search>
+			<add><![CDATA[
+		$data['aqe_status'] = $this->config->get('aqe_status');
+		if ($data['aqe_status']) {
+			if (!(int)$this->config->get('aqe_display_in_menu_as')) {
+				$data['product'] = $this->url->link('catalog/product_ext', 'token=' . $this->session->data['token'], 'SSL');
+			} else {
+				$data['product_qe'] = $this->url->link('catalog/product_ext', 'token=' . $this->session->data['token'], 'SSL');
+			}
+		}
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/view/template/common/menu.tpl">
+		<operation info="Point default Catalog > Products page to the custom page">
+			<search position="after"><![CDATA[
+			<a href="<?php echo $product; ?>">
+			]]></search>
+			<add><![CDATA[
+	<?php if ($aqe_status && !empty($product_qe)) { ?><li><a href="<?php echo $product_qe; ?>"><?php echo $text_product_qe; ?></a></li><?php } ?>
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="admin/view/template/catalog/product_form.tpl">
+		<operation info="Point default Catalog > Products page to the custom page">
+			<search position="after"><![CDATA[
+			<form action="<?php echo $action; ?>"
+			]]></search>
+			<add><![CDATA[
+			<?php if (!empty($aqe_redirect)) { ?><input type="hidden" name="aqe_redirect" value="<?php echo $aqe_redirect; ?>" /><?php } ?>
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="system/library/db/mysql.php">
+		<operation error="skip">
+			<ignoreif><![CDATA[
+			SET SESSION group_concat_max_len
+			]]></ignoreif>
+			<search position="after"><![CDATA[
+			SET SQL_MODE = ''
+			]]></search>
+			<add><![CDATA[
+		mysql_query("SET SESSION group_concat_max_len = 65535", $this->link);
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="system/library/db/mysqli.php">
+		<operation error="skip">
+			<ignoreif><![CDATA[
+			SET SESSION group_concat_max_len
+			]]></ignoreif>
+			<search position="after"><![CDATA[
+			SET SQL_MODE = ''
+			]]></search>
+			<add><![CDATA[
+		$this->link->query("SET SESSION group_concat_max_len = 65535");
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="system/startup.php">
+		<operation error="skip">
+			<ignoreif><![CDATA[
+			$execution_start_time = microtime(true);
+			]]></ignoreif>
+			<search position="after"><![CDATA[
+			<?php
+			]]></search>
+			<add><![CDATA[
+		$execution_start_time = microtime(true);
+			]]></add>
+		</operation>
+	</file>
+
+	<file name="system/library/db.php">
+		<operation error="skip">
+			<ignoreif><![CDATA[
+			public static $query_count
+			]]></ignoreif>
+			<search position="after"><![CDATA[
+			private $db;
+			]]></search>
+			<add><![CDATA[
+	public static $query_count = 0;
+			]]></add>
+		</operation>
+		<operation error="skip">
+			<ignoreif><![CDATA[
+			self::$query_count += 1;
+			]]></ignoreif>
+			<search position="after"><![CDATA[
+			public function query
+			]]></search>
+			<add><![CDATA[
+	self::$query_count += 1;
+			]]></add>
+		</operation>
+	</file>
+
+</modification>

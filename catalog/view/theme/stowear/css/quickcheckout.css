@@ -1,0 +1,166 @@
+/* yym_custom */
+.quickcheckout-content table > tbody > tr > td > label {
+  margin-top: 0;
+}
+input[name="delivery_date"],
+select[name="delivery_time"] {
+  cursor: pointer !important;
+}
+.datepicker-days .day.disabled,
+.datepicker-months .month.disabled,
+.datepicker-years .year.disabled {
+  color: #dddddd !important;
+}
+.datepicker-days .day:not(.disabled) {
+  font-weight: bold !important;
+}
+.datepicker-clear {
+  padding: 5px;
+  text-align: center;
+  cursor: pointer;
+}
+option.strike {
+  text-decoration: line-through !important;
+  color: #dddddd !important;
+}
+
+
+.quickcheckout-heading {
+  font-size: 16px;
+  color: #000000;
+  margin-top: 10px;
+  background: #eeeeee;
+  padding: 10px;
+}
+.quickcheckout-content {
+  border: 1px solid #dddddd;
+  padding: 10px;
+  overflow: auto;
+  margin-bottom: 10px;
+}
+.or {
+  text-align: center;
+  width: 100%;
+  font-size: 24px;
+  color: #aaaaaa;
+}
+.hide {
+  display: none !important;
+}
+#quickcheckoutconfirm .col-sm-6 {
+  float: none !important;
+  display: inline-block !important;
+  width: 49% !important;
+  vertical-align: top;
+}
+table.quickcheckout-cart {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 1px solid #DDDDDD;
+  border-left: 1px solid #DDDDDD;
+  border-right: 1px solid #DDDDDD;
+}
+.quickcheckout-cart thead td {
+  background-color: #F7F7F7;
+  border-bottom: 1px solid #DDDDDD;
+  color: #4D4D4D;
+  font-weight: bold;
+  /*text-align: left;*/ /* yym */
+  text-transform: uppercase;
+  padding: 7px;
+}
+.quickcheckout-cart tbody td {
+  border-bottom: 1px solid #eeeeee;
+  /*vertical-align: top;*/ /* yym */
+  padding: 7px;
+}
+/* yym */
+.quickcheckout-cart td.name,
+.quickcheckout-cart td.price,
+.quickcheckout-cart td.quantity,
+.quickcheckout-cart td.total {
+  vertical-align: middle;
+}
+.quickcheckout-cart td.image {
+  text-align: center;
+}
+.quickcheckout-cart td.image img {
+  /*border: 1px solid #DDDDDD;*/ /* yym */
+}
+.quickcheckout-cart td.name {
+  text-align: left;
+}
+.quickcheckout-cart td.quantity {
+  text-align: center; /* yym */
+  /*min-width: 150px !important;*/ /* yym */
+}
+/*
+.quickcheckout-cart td.quantity > img, .quickcheckout-cart td.quantity > a {
+  position: relative;
+  top: 4px;
+  cursor: pointer;
+}
+*/
+.quickcheckout-cart td.price {
+  text-align: center; /* yym */
+}
+.quickcheckout-cart td.total {
+  text-align: center; /* yym */
+  padding-right: 10px;
+}
+#voucher-heading {
+  background: #eeeeee;
+  cursor: pointer;
+  width: 100%;
+  padding: 10px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+#coupon-heading {
+  background: #eeeeee;
+  cursor: pointer;
+  width: 100%;
+  padding: 10px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+#reward-heading {
+  background: #eeeeee;
+  cursor: pointer;
+  width: 100%;
+  padding: 10px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+#voucher-content {
+  display: none;
+  margin-bottom:15px; /* yym */
+}
+#coupon-content {
+  display: none;
+  margin-bottom:15px;
+}
+#reward-content {
+  display: none;
+  margin-bottom:15px;
+}
+.checkout-content {
+  display: block !important;
+}
+.fa-5x {
+  font-size: 5em !important;
+}
+/* Custom themes may need this */
+/*
+select {
+  width: 100%;
+}
+.text-right {
+  text-align: right;
+}
+.text-left {
+  text-align: left;
+}
+.text-center {
+  text-align: center;
+}*/

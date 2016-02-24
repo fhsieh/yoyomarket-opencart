@@ -1,0 +1,124 @@
+/*old opencart style*/
+a.button,.list a.button{text-decoration:none;color:#FFF;display:inline-block;padding:5px 15px;background:#003A88;-webkit-border-radius:10px 10px 10px 10px;-moz-border-radius:10px;-khtml-border-radius:10px 10px 10px 10px;border-radius:10px 10px 10px 10px}
+table.form{width:100%;border-collapse:collapse;margin-bottom:20px}
+table.form > tbody > tr > td:first-child{width:200px}
+table.form > tbody > tr > td{padding:10px;color:#000;border-bottom:1px dotted #CCC}
+.scrollbox{border:1px solid #CCC;width:350px;height:100px;background:#FFF;overflow-y:scroll}
+.scrollbox img{float:right;cursor:pointer}
+.scrollbox div{padding:3px}
+.scrollbox div input{margin:0;padding:0;margin-right:3px}
+.scrollbox div.even{background:#FFF}
+.scrollbox div.odd{background:#F2F2F2}
+.help {color: #666;font-size: 11px;font-weight: normal;display: block; line-height:16px;}
+.buttons{float:right}
+.heading .buttons .button {margin-left:5px}
+
+
+.box > .content {overflow:unset;} /* overflow fix on 1.5 */
+
+/* iToggle */
+label.ilabel{display:block;font-size:12px;padding-bottom:/*1*/0px;cursor:pointer}
+label.itoggle,label.itoggle span{display:block;width:79px;height:23px;margin-bottom:20px;background:url(img/itoggle.png) left bottom no-repeat;cursor:pointer;text-indent:-5000px}
+label.itoggle.iToff{background-position:right bottom}
+label.itoggle span{background-position:left top;margin:0}
+input.iT_checkbox{position:absolute;top:-9999px;left:-9999px}
+
+/* Main style */
+.nav-pills li a{background:#fafafa;}
+.nav-pills li a i{position:absolute; right:10px; font-size:14px; padding-top:2px;}
+.nav-pills li a i.fa-minus-circle:hover{color:#CC5353}
+.nav-pills li i.fa-plus-circle:hover{color:#1871A1}
+
+#qosu_statuses a{position:relative;}
+#qosu_statuses i{color:#ccc}
+#qosu_statuses .sortable-ghost a{background:#ddd;}
+
+.modal{color:#555;}
+#modal-info .modal-body h5{border-bottom: 1px dotted #ccc; padding-bottom:5px; font-size:13px;}
+#modal-info .modal-title i.fa{color:#5C8BA5; font-size:18px; padding-right:10px;}
+#modal-info .infotags span{display:inline-block; width:287px;}
+#modal-info .tag{font-weight: normal; color: #2F7698;}
+#modal-info p{margin-bottom:20px;}
+#modal-info .img-thumbnail{box-shadow:3px 3px 4px 0px #999; border-radius: 7px;}
+#modal-info .infoblock{position:relative; padding:20px; border-radius:10px; margin-bottom:15px; background:#eee;}
+#modal-info .infoblock.indent-left{padding-left:90px;}
+#modal-info .infoblock.indent-right{padding-right:90px;}
+#modal-info .infoblock .context{position:absolute; top:27px; font-size:50px; font-family: Arial, Arial, Helvetica, sans-serif; font-style:italic; font-weight:bold; color:#D8D8D8; text-shadow: 1px 1px 0 #CCC8C8;}
+#modal-info .infoblock.indent-left .context{left:18px;}
+#modal-info .infoblock.indent-right .context{right:18px;}
+#modal-info .infotags p{margin-bottom:25px;}
+.info-btn{float:right;}
+.active a, a:focus, .btn{outline:0 !important;}
+.nav-pills li a{outline:0; font-weight:bold; color:#444; text-decoration:none;}
+.nav-tabs > li.active > a, .nav-tabs > li.active > a:hover, .nav-tabs > li.active > a:focus{color:#444;}
+.nav-tabs li.active i.fa{color:#2E52A4;}
+.nav-pills > li.active > a, .nav-pills > li.active > a:hover, .nav-pills > li.active > a:focus{background:#444;}
+
+option{padding-right:15px;}
+.box, .box td{font-size: 13px; line-height: 15px; font-family: "PT Sans","PT Sans Narrow", sans-serif;}
+h3.panel-title{color:#2E52A4; font-weight:bold; position:relative;top:2px;}
+.box h3.panel-title{float:left; padding: 9px 0px 0px; margin: 0px; font-size: 16px;}
+h3.panel-title span{color:#555;}
+h3.panel-title img{position:relative;bottom:2px;}
+.box h3.panel-title img{bottom:5px;}
+.form.about td{padding:30px 10px}
+.nav-tabs > li > a{border-radius: 3px 20px 0 0; outline:0; color:#333; text-decoration:none;}
+.nav-tabs > li.pull-right > a{border-radius: 20px 3px 0 0;}
+.nav-tabs a.selected, .nav-tabs .active a{box-shadow: 2px -2px 2px #eee;}
+.nav-tabs a.selected i{background-position:bottom; color:#86C440;}
+.nav-tabs i{float:left; position:relative; right:5px; top:1px; padding-right:0px; color:#DED2D0; font-size:16px; font-weight: normal;}
+.nav-tabs{margin-bottom: 25px;}
+.switchContent{display:none}
+.switchBtn{cursor:pointer}
+.multiple_switch > div{width:150px; float:left;}
+.multiple_switch > div > span{display:block; padding-bottom:7px;}
+
+tr.info td:first-child{text-align:center; font-size:22px; color:#bbb;  transition: color 500ms;}
+tr.info:hover td:first-child{color:#2E52A4; transition: color 500ms;}
+tr.info td:last-child{color:#555;padding:40px 100px 40px 0;}
+
+a.button, .list a.button{
+	cursor:pointer;
+	transition: background 200ms;
+	border:0px solid #888;
+	font-weight:normal;
+	background: #2e7091;
+	border-radius:6px;
+	text-shadow:0 0 2px #333;
+	box-shadow:1px 1px 2px #333;
+	font-size:16px;
+
+	border-radius: 5px;
+	border-bottom: 1px solid rgba(255,255,255,0.4);
+	box-shadow :0 -1px 1px rgba(0,0,0,0.2)inset, 0 1px 2px rgba(0,0,0,0.8)inset;
+	color:#fff;
+	text-shadow : 0px -1px 0px rgba(0,0,0,0.8);
+		
+	background-size : 30px 30px;
+	background-repeat:repeat-x;
+	background-position :0;
+	background-image : -moz-linear-gradient( 90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.3) 100% );
+	background-image : -o-linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.3) 100%);
+	background-image : -webkit-linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.3) 100%);
+
+	background-color: #555;
+}
+a.button img{vertical-align:top; position:relative; right:4px;}
+a.button:hover{background-color: rgba(74,108,155,1); transition: background 200ms;}
+
+.button i{position:relative; right:4px; transition: color 200ms;}
+.button .iconic{font-size:14px; line-height:14px; bottom:1px; }
+.button:hover .iconic{transition: color 200ms;}
+
+.button.green i{color:#3DCC5C;}
+.button.green:hover i{color:#fff;}
+.button.green:hover{background-color:#309B28;}
+.button.red i{color:#ED5555;}
+.button.red:hover i{color:#fff;}
+.button.red:hover{background-color:#CE3D35;}
+.button.orange i{color:#ED9923;}
+.button.orange:hover i{color:#fff;}
+.button.orange:hover{background-color:#EA7D1E;}
+.button.blue i{color:#669CE8;}
+.button.blue:hover i{color:#fff;}
+.button.blue:hover{background-color:#4A6C9B;}

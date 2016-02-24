@@ -1,0 +1,33 @@
+* {
+  font-family: sans-serif;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+thead > tr > td {
+  font-weight: bold;
+}
+td {
+  border-bottom: thin solid #888888;
+  font-size: 11px;
+  padding: 4px;
+}
+
+.date {
+  font-size: 10px;
+}
+
+.pull-right {
+  float: right;
+}
+.text-left {
+  text-align: left;
+}
+.text-center {
+  text-align: center;
+}
+.text-right {
+  text-align: right;
+}

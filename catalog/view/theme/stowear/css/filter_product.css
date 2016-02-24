@@ -1,0 +1,127 @@
+.filter-product {
+	
+}
+
+	.filter-product .filter-tabs {
+		background: url(../img/bg-menu.png) bottom left repeat-x;
+		list-style: none;
+		padding: 15px 60px 0px 0px;
+		font-size: 16px;
+		font-weight: 800;
+		color: #2e2f36;
+		text-transform: uppercase;
+		margin: 40px 0px 30px 0px;
+	}
+		.filter-product .filter-tabs ul {
+			list-style: none;
+			margin: 0px;
+			padding: 0px;
+		}
+	
+		.filter-product .filter-tabs ul > li {
+		  float: left;
+		  margin: 0px 30px 0px 0px;
+		  padding: 0px 0px 11px 0px;
+		  position: relative;
+		}
+		
+			.filter-product .filter-tabs ul > li > a {
+			  position: relative;
+			  display: block;
+			  line-height: 20px;
+			  color: #2e2f36;
+			}
+			
+			.filter-product .filter-tabs ul > li.active > a,
+			.filter-product .filter-tabs ul > li > a:hover,
+			.filter-product .filter-tabs ul > li.active > a:focus {
+				color: #9d9ea8;
+			}
+			
+				.filter-product .filter-tabs ul > li:before {
+					position: absolute;
+					content: ' ';
+					width: 0px;
+					height: 2px;
+					background: #494b56;
+					bottom: 0;
+					left: 0;
+					transition: width 0.3s;
+					-moz-transition: width 0.3s;
+					-webkit-transition: width 0.3s;
+					-o-transition: width 0.3s;
+				}
+				
+					.filter-product .filter-tabs ul > li.active:before {
+						width: 100%;
+					}
+
+.tab-content {
+	position: relative;
+}
+				
+	.tab-content .prev-button, 
+	.tab-content .next-button {
+		position: absolute;
+		right: 0px;
+		margin: 0px;
+		width: 30px;
+		height: 30px;
+		background: #ccc;
+		-webkit-transition: background 0.3s;
+		-moz-transition: background 0.3s;
+		-o-transition: background 0.3s;
+		transition: background 0.3s;
+		top: -60px;
+	}
+	
+		.tab-content .prev-button:hover,
+		.tab-content .next-button:hover {
+			background: #494b56;
+		}
+		
+		.tab-content .prev-button {
+			right: 40px;
+		}
+	
+		.tab-content .prev-button span, 
+		.tab-content .next-button span {
+			display: block;
+			width: 6px;
+			height: 8px;
+			margin: 12px auto 0px auto;
+			background: url(../img/left.png) no-repeat;
+			-webkit-transform: rotate(0deg);
+			-webkit-transition-timing-function: ease-out;
+			-webkit-transition-duration: 250ms;
+			-moz-transform: rotate(0deg);
+			-moz-transition-timing-function: ease-out;
+			-moz-transition-duration: 250ms;
+		}
+		
+			.tab-content .next-button span {
+				background: url(../img/right.png) no-repeat;
+			}
+			
+			.tab-content .prev-button:hover span,
+			.tab-content .next-button:hover span {
+				-webkit-transform: rotate(360deg);
+				-moz-transform: rotate(360deg);
+			}
+			
+@media (max-width: 767px) {
+	.responsive .filter-product .filter-tabs {
+		margin: 20px 0px 20px 0px;
+	}
+	
+	.responsive .tab-content .prev-button, 
+	.responsive .tab-content .next-button {
+		top: -50px;
+	}
+	
+	
+	.responsive .filter-product .filter-tabs ul > li { 
+		margin-right: 15px;
+		font-size: 13px;
+	}
+}

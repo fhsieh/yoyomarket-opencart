@@ -1,0 +1,31 @@
+<modification>
+	<id>Quick Checkout</id>
+	<version>OC 2</version>
+	<vqmver>2.5.0</vqmver>
+	<author>Equotix</author>
+	<file name="catalog/controller/checkout/checkout.php">
+		<operation>
+			<search position="after"><![CDATA[
+				public function index() {
+			]]></search>
+			<add><![CDATA[
+				if ($this->config->get('quickcheckout_status')) {
+					$this->response->redirect($this->url->link('quickcheckout/checkout', '', 'SSL'));
+				}
+			]]></add>
+		</operation>
+	</file>
+	<file name="catalog/controller/checkout/success.php">
+		<operation>
+			<search position="after"><![CDATA[
+				unset($this->session->data['guest']);
+			]]></search>
+			<add><![CDATA[
+				unset($this->session->data['delivery_date']);
+				unset($this->session->data['delivery_time']);
+				unset($this->session->data['delivery_telephone']);
+				unset($this->session->data['survey']);
+			]]></add>
+		</operation>
+	</file>
+</modification>

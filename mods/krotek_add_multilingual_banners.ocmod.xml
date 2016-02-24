@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <name>Add Multilingual Banners</name>
+  <code>krotek_multilingual_banners</code>
+  <version>2.0.1</version>
+  <author>Krotek</author>
+  <link>http://thekrotek.com</link>
+
+  <!-- Modify admin banner to support multi language -->
+  <file path="admin/controller/design/banner.php">
+    <operation>
+      <search><![CDATA[public function index() {]]></search>
+      <add position="before"><![CDATA[
+      // krotek_multilingual_banners
+      public function checkBannerTables() {
+        $query = $this->db->query("SHOW FIELDS FROM `".DB_PREFIX."banner_image_description` where Field ='link'");
+
+        if (!$query->num_rows) {
+          $this->db->query("ALTER TABLE `".DB_PREFIX."banner_image_description` ADD `link` VARCHAR(255) NOT NULL");
+          $query = $this->db->query("SELECT i.banner_image_id, i.link FROM `".DB_PREFIX."banner_image` AS i LEFT JOIN `".DB_PREFIX."banner_image_description` AS d ON d.banner_image_id = i.banner_image_id GROUP BY i.banner_image_id");
+
+          if ($query->num_rows) {
+            foreach ($query->rows as $row) {
+              $this->db->query("UPDATE `".DB_PREFIX."banner_image_description` SET `link` = '".$this->db->escape($row['link'])."' WHERE banner_image_id = ".$row['banner_image_id']);
+            }
+            $this->db->query("UPDATE `".DB_PREFIX."banner_image` SET `link` = ''");
+          }
+        }
+
+        $query = $this->db->query("SHOW FIELDS FROM `".DB_PREFIX."banner_image_description` where Field ='image'");
+
+        if (!$query->num_rows) {
+          $this->db->query("ALTER TABLE `".DB_PREFIX."banner_image_description` ADD `image` VARCHAR(255) NOT NULL");
+          $query = $this->db->query("SELECT i.banner_image_id, i.image FROM `".DB_PREFIX."banner_image` AS i LEFT JOIN `".DB_PREFIX."banner_image_description` AS d ON d.banner_image_id = i.banner_image_id GROUP BY i.banner_image_id");
+
+          if ($query->num_rows) {
+            foreach ($query->rows as $row) {
+              $this->db->query("UPDATE `".DB_PREFIX."banner_image_description` SET `image` = '".$this->db->escape($row['image'])."' WHERE banner_image_id = ".$row['banner_image_id']);
+            }
+            $this->db->query("UPDATE `".DB_PREFIX."banner_image` SET `image` = ''");
+          }
+        }
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[public function index() {]]></search>
+      <add position="after"><![CDATA[
+      // krotek_multilingual_banners
+      $this->checkBannerTables();
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['banner_images'][] = array(]]></search>
+      <add position="before"><![CDATA[
+      // krotek_multilingual_banners
+      $image = "";
+      $thumb = "";
+
+      foreach ($data['languages'] as $language) {
+        $language_id = $language['language_id'];
+
+        if (isset($banner_image['banner_image_description'][$language_id]['link'])) {
+          $banner_image['link'][$language_id] = $banner_image['banner_image_description'][$language_id]['link'];
+        } else {
+          $banner_image['link'][$language_id] = "";
+        }
+
+        if (isset($banner_image['banner_image_description'][$language_id]['image'])) {
+          $image = $banner_image['banner_image_description'][$language_id]['image'];
+        } else {
+          $image = "";
+        }
+
+        if ($image && is_file(DIR_IMAGE.$image)) {
+          $banner_image['banner_image_description'][$language_id]['thumb'] = $this->model_tool_image->resize($image, 100, 100);
+        } else {
+          $banner_image['banner_image_description'][$language_id]['thumb'] = $this->model_tool_image->resize('no_image.png', 100, 100);
+        }
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$this->model_design_banner->addBanner($this->request->post);]]></search>
+      <add position="replace"><![CDATA[
+      // krotek_multilingual_banners
+      $banner_id = $this->model_design_banner->addBanner($this->request->post);
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/model/design/banner.php">
+    <operation>
+      <search><![CDATA[$this->db->escape($banner_image['link'])]]></search>
+      <add position="replace"><![CDATA[""]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$this->db->escape($banner_image['image'])]]></search>
+      <add position="replace"><![CDATA[""]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[foreach ($banner_image['banner_image_description'] as $language_id => $banner_image_description) {]]></search>
+      <add position="after" offset="1"><![CDATA[
+      // krotek_multilingual_banners
+      $this->db->query("UPDATE ".DB_PREFIX."banner_image_description SET link = '".$this->db->escape($banner_image['link'][$language_id])."', image = '".$this->db->escape($banner_image['image'][$language_id])."' WHERE banner_image_id = '".(int)$banner_image_id."' AND language_id = '".(int)$language_id."' AND banner_id = '".(int)$banner_id."'");
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$banner_image_description_data[$banner_image_description['language_id']] = array('title' => $banner_image_description['title']);]]></search>
+      <add position="after"><![CDATA[
+      // krotek_multilingual_banners
+      $banner_image_description_data[$banner_image_description['language_id']]['link'] = $banner_image_description['link'];
+      $banner_image_description_data[$banner_image_description['language_id']]['image'] = $banner_image_description['image'];
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Add to admin banner page -->
+  <file path="admin/view/template/design/banner_form.tpl">
+    <operation>
+      <search><![CDATA[<td class="text-left" style="width: 30%;"><input type="text" name="banner_image[<?php echo $image_row; ?>][link]" value="<?php echo $banner_image['link']; ?>" placeholder="<?php echo $entry_link; ?>" class="form-control" /></td>]]></search>
+      <add position="replace" offset="2"><![CDATA[
+      <?php /* krotek_multilingual_banners */ ?>
+      <td class="text-left">
+        <?php foreach ($languages as $language) { ?>
+        <div class="input-group pull-left">
+          <span class="input-group-addon">
+            <img src="view/image/flags/<?php echo $language['image']; ?>" title="<?php echo $language['name']; ?>" />
+          </span>
+          <input type="text" name="banner_image[<?php echo $image_row; ?>][link][<?php echo $language['language_id']; ?>]" value="<?php echo (isset($banner_image['banner_image_description'][$language['language_id']]) ? $banner_image['banner_image_description'][$language['language_id']]['link'] : ''); ?>" class="form-control" />
+        </div>
+        <?php } ?>
+      </td>
+      <td class="text-left">
+        <?php foreach ($languages as $language) { ?>
+        <div class="input-group pull-left col-xs-4">
+          <span class="input-group-addon">
+            <img src="view/image/flags/<?php echo $language['image']; ?>" title="<?php echo $language['name']; ?>" />
+          </span>
+          <div class="image">
+            <a href="" id="thumb-image<?php echo $image_row; ?>-<?php echo $language['language_id']; ?>" data-toggle="image" class="img-thumbnail">
+              <img src="<?php echo $banner_image['banner_image_description'][$language['language_id']]['thumb']; ?>" alt="" title="" data-placeholder="<?php echo $placeholder; ?>" />
+            </a>
+            <input type="hidden" name="banner_image[<?php echo $image_row; ?>][image][<?php echo $language['language_id']; ?>]" value="<?php echo (isset($banner_image['banner_image_description'][$language['language_id']]) ? $banner_image['banner_image_description'][$language['language_id']]['image'] : ''); ?>" id="input-image<?php echo $image_row.'-'.$language['language_id']; ?>" />
+          </div>
+        </div>
+        <?php } ?>
+      </td>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[html += '  <td class="text-left"><input type="text" name="banner_image[' + image_row + '][link]" value="" placeholder="<?php echo $entry_link; ?>" class="form-control" /></td>';]]></search>
+      <add position="replace" offset="1"><![CDATA[
+      // krotek_multilingual_banners
+      html += '<td class="text-left">';
+      <?php foreach ($languages as $language) { ?>
+        html += '<div class="input-group pull-left">';
+        html += '<span class="input-group-addon">';
+        html += '<img src="view/image/flags/<?php echo $language['image']; ?>" title="<?php echo $language['name']; ?>" />';
+        html += '</span>';
+        html += '<input type="text" name="banner_image[' + image_row + '][link][<?php echo $language['language_id']; ?>]" value="" class="form-control" />';
+        html += '</div>';
+      <?php } ?>
+      html += '</td>';
+
+      html += '<td class="text-left">';
+      <?php foreach ($languages as $language) { ?>
+        html += '<div class="input-group pull-left col-xs-4">';
+        html += '<span class="input-group-addon">';
+        html += '<img src="view/image/flags/<?php echo $language['image']; ?>" title="<?php echo $language['name']; ?>" />';
+        html += '</span>';
+        html += '<div class="image">';
+        html += '<a href="" id="thumb-image<?php echo $image_row; ?>-<?php echo $language['language_id']; ?>" data-toggle="image" class="img-thumbnail"><img src="<?php echo $placeholder; ?>" alt="" title="" data-placeholder="<?php echo $placeholder; ?>" /></a><input type="hidden" name="banner_image[' + image_row + '][image][<?php echo $language['language_id']; ?>]" value="" id="image' + image_row + '-<?php echo $language['language_id']; ?>" /> ';
+        html += '</div>';
+        html += '</div>';
+      <?php } ?>
+      html += '</td>';
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Modify admin slideshow module -->
+  <file path="admin/controller/module/slideshow.php">
+    <operation>
+      <search><![CDATA[$this->response->redirect($this->url->link('extension/module']]></search>
+      <add position="before"><![CDATA[
+      // krotek_multilingual_banners
+      $url = "";
+
+      if (isset($this->request->get['module_id'])) {
+        $url .= '&module_id='.$this->request->get['module_id'];
+      }
+
+      if ($this->request->post['apply']) {
+        $this->redirect($this->url->link('module/slideshow', 'token='.$this->session->data['token'].$url, 'SSL'));
+      } else {
+        $this->redirect($this->url->link('extension/module', 'token='.$this->session->data['token'].$url, 'SSL'));
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['heading_title']]]></search>
+      <add position="before"><![CDATA[
+      // krotek_multilingual_banners
+      $data['button_apply'] = $this->language->get('button_apply');
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- Deprecated
+  <file path="admin/view/template/module/slideshow.tpl">
+    <operation>
+      <search><![CDATA[<div class="buttons">]]></search>
+      <add position="replace"><![CDATA[
+      <div class="buttons"><a onclick="$('#apply').attr('value', '1'); $('#form').submit();" class="button"><?php echo $button_apply; ?></a>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<table id="module" class="list">]]></search>
+      <add position="before"><![CDATA[
+      <input type="hidden" name="apply" id="apply" value="0">
+      ]]></add>
+    </operation>
+    <operation error="skip">
+      <search><![CDATA[<select name="slideshow_module[<?php echo $module_row; ?>][banner_id]">]]></search>
+      <add position="replace"><![CDATA[
+      <select name="slideshow_module[<?php echo $module_row; ?>][banner_id][]" multiple="multiple">
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<?php if ($banner['banner_id'] == $banner_id) { ?>]]></search>
+      <add position="replace"><![CDATA[
+      <?php if (in_array($banner['banner_id'], $banner_id)) { ?>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[html += '    <td class="left"><select name="slideshow_module[' + module_row + '][banner_id]">';]]></search>
+      <add position="replace"><![CDATA[
+      html += '<td class="left"><select name="slideshow_module[' + module_row + '][banner_id][]" multiple="multiple">';
+      ]]></add>
+    </operation>
+  </file>
+  -->
+
+
+
+  <!-- Add to catalog slideshow module -->
+  <file path="catalog/controller/module/slideshow.php">
+    <operation>
+      <search><![CDATA[$data['banners'] = array();]]></search>
+      <add position="after"><![CDATA[
+      // krotek_multilingual_banners
+      $banners = $setting['banner_id'];
+      for ($i = 0; $i < count($banners); $i++) {
+        if (!$this->model_design_banner->checkBanner($banners[$i])) unset($banners[$i]);
+      }
+      $setting['banner_id'] = $banners;
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Add to catalog banner module -->
+  <file path="catalog/model/design/banner.php">
+    <operation>
+      <search><![CDATA[public function getBanner($banner_id) {]]></search>
+      <add position="before"><![CDATA[
+      // krotek_multilingual_banners
+      public function checkBanner($banner_id) {
+        $query = $this->db->query("SELECT * FROM ".DB_PREFIX."banner WHERE banner_id = '".(int)$banner_id."' AND status = '1'");
+        if ($query->num_rows) return true;
+        else return false;
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+</modification>

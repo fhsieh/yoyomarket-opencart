@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <name>Add Japan Zone Sort Order</name>
+  <code>yym_jp_zone_sort_order</code>
+  <version>1.0</version>
+  <author>Felix Hsieh</author>
+  <link>http://www.yoyomarket.jp</link>
+
+  <!-- Add catalog zone sorting (credit: opencart-jp) -->
+  <file path="catalog/model/localisation/zone.php">
+    <operation>
+      <search><![CDATA[$query = $this->db->query("SELECT * FROM " . DB_PREFIX . "zone WHERE country_id = '" . (int)$country_id . "' AND status = '1' ORDER BY name");]]></search>
+      <add position="replace"><![CDATA[
+      // yym_jp_zone_sort_order
+      $sql = "SELECT * FROM " . DB_PREFIX . "zone WHERE country_id = '" . (int)$country_id . "' AND status = '1'";
+      if ($this->language->get('code') == 'ja') {
+        $sql .= " ORDER BY code";
+      } else {
+        $sql .= " ORDER BY name";
+      }
+      $query = $this->db->query($sql);
+      ]]></add>
+    </operation>
+  </file>
+
+</modification>

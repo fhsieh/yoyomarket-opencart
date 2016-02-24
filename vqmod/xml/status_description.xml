@@ -1,0 +1,265 @@
+<modification>
+  <id><![CDATA[Order Status Description]]></id>
+  <version><![CDATA[2.0.0]]></version>
+  <vqmver><![CDATA[2.1.5]]></vqmver>
+  <author><![CDATA[The Krotek]]></author>
+
+  <!-- Admin: Order Statuses -->
+  <file name="admin/controller/localisation/order_status.php">
+    <operation>
+      <search position="before"><![CDATA[if (isset($this->error['name'])) {]]></search>
+      <add><![CDATA[
+      $this->load->model('localisation/order_status');
+      $this->model_localisation_order_status->checkDescription();
+
+      $data['entry_description'] = $this->language->get('entry_description');
+
+      if (isset($this->error['description'])) {
+        $data['error_description'] = $this->error['description'];
+      } else {
+        $data['error_description'] = array();
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="admin/model/localisation/order_status.php">
+    <operation>
+      <search position="before"><![CDATA[function addOrderStatus($data) {]]></search>
+      <add><![CDATA[
+      public function checkDescription() {
+        $query = $this->db->query("SHOW FIELDS FROM `".DB_PREFIX."order_status` WHERE Field = 'description'");
+
+        if (!$query->num_rows) {
+          $this->db->query("ALTER TABLE `".DB_PREFIX."order_status` ADD description TEXT NOT NULL");
+        }
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="after"><![CDATA[$order_status_data[$result['language_id']]]]></search>
+      <add><![CDATA[
+      $order_status_data[$result['language_id']] = array(
+        'name' => $result['name'],
+        'description' => (isset($result['description']) ? $result['description'] : "")
+      );
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="replace"><![CDATA[$this->db->escape($value['name'])]]></search>
+      <add><![CDATA[$this->db->escape($value['name'])."', description = '".$this->db->escape($value['description'])]]></add>
+    </operation>
+  </file>
+
+  <file name="admin/view/template/localisation/order_status_form.tpl">
+    <operation error="skip">
+      <search position="before"><![CDATA[</form>]]></search>
+      <add><![CDATA[
+      <div class="form-group">
+        <label class="col-sm-2 control-label"><?php echo $entry_description; ?></label>
+        <div class="col-sm-10">
+          <?php foreach ($languages as $language) { ?>
+          <div class="input-group"><span class="input-group-addon"><img src="view/image/flags/<?php echo $language['image']; ?>" title="<?php echo $language['name']; ?>" /></span>
+            <input type="text" name="order_status[<?php echo $language['language_id']; ?>][description]" value="<?php echo isset($order_status[$language['language_id']]) ? $order_status[$language['language_id']]['description'] : ''; ?>" placeholder="<?php echo $entry_description; ?>" class="form-control" />
+          </div>
+          <?php } ?>
+        </div>
+      </div>
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Catalog: Order History -->
+  <file name="catalog/controller/account/order.php">
+    <operation>
+      <search position="after"><![CDATA[$data['orders'][] = array(]]></search>
+      <add><![CDATA[
+      'status_description' => (isset($result['status_description']) ? $result['status_description'] : ""),
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="after"><![CDATA[$data['histories'][] = array(]]></search>
+      <add><![CDATA[
+      'status_description' => (isset($result['status_description']) ? $result['status_description'] : ""),
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="catalog/model/account/order.php">
+    <operation>
+      <search position="replace"><![CDATA[os.name as status]]></search>
+      <add><![CDATA[os.name as status, os.description as status_description]]></add>
+    </operation>
+    <operation>
+      <search position="replace"><![CDATA[oh.comment]]></search>
+      <add><![CDATA[oh.comment, os.description as status_description]]></add>
+    </operation>
+  </file>
+
+  <file name="catalog/view/theme/stowear/template/account/order_list.tpl">
+    <!-- Moved to stowear stylesheet
+    <operation error="skip">
+      <search position="before"><![CDATA[<div class="table-responsive">]]></search>
+      <add><![CDATA[
+      <style type="text/css">
+      .table-responsive {
+        overflow: visible;
+      }
+
+      .status-description {
+        border-bottom: 1px dashed;
+      }
+
+      [data-tooltip] {
+        position: relative;
+        z-index: 2;
+        cursor: pointer;
+      }
+
+      [data-tooltip]:before,
+      [data-tooltip]:after {
+        display: none;
+      }
+
+      [data-tooltip]:before {
+        background-color: #555555;
+        border: 1px solid #555555;
+        border-radius: 3px;
+        bottom: 150%;
+        box-shadow: 0 0 3px #dddddd;
+        color: #ffffff;
+        content: attr(data-tooltip);
+        font-size: 90%;
+        left: 50%;
+        line-height: 125%;
+        margin-bottom: 5px;
+        margin-left: -125px;
+        padding: 7px;
+        position: absolute;
+        text-align: center;
+        width: 250px;
+      }
+
+      [data-tooltip]:after {
+        position: absolute;
+        bottom: 150%;
+        left: 50%;
+        margin-left: -5px;
+        width: 0;
+        border-top: 5px solid #555555;
+        border-right: 5px solid transparent;
+        border-left: 5px solid transparent;
+        content: " ";
+        font-size: 0;
+        line-height: 0;
+        box-shadow: none;
+      }
+
+      [data-tooltip]:hover:before,
+      [data-tooltip]:hover:after {
+        display: block;
+      }
+      </style>
+      ]]></add>
+    </operation>
+    -->
+    <operation error="skip">
+      <search position="replace"><![CDATA[<td class="text-left"><?php echo $order['status']; ?></td>]]></search>
+      <add><![CDATA[
+      <td class="text-center">
+        <?php if (isset($order['status_description']) && $order['status_description']) { ?>
+        <span class="status-description" data-tooltip="<?php echo $order['status_description']; ?>">
+          <?php echo $order['status']; ?>
+        </span>
+        <?php } else { ?>
+        <?php echo $order['status']; ?>
+        <?php } ?>
+      </td>
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- Moved to stowear stylesheet
+  <file name="catalog/view/theme/stowear/template/account/order_info.tpl">
+    <operation error="skip">
+      <search position="before"><![CDATA[<ul class="breadcrumb">]]></search>
+      <add><![CDATA[
+      <style type="text/css">
+      .table-responsive {
+        overflow: visible;
+      }
+
+      .status-description {
+        border-bottom: 1px dashed;
+      }
+
+      [data-tooltip] {
+        position: relative;
+        z-index: 2;
+        cursor: pointer;
+      }
+
+      [data-tooltip]:before,
+      [data-tooltip]:after {
+        display: none;
+      }
+
+      [data-tooltip]:before {
+        background-color: #555555;
+        border: 1px solid #555555;
+        border-radius: 3px;
+        bottom: 150%;
+        box-shadow: 0 0 3px #dddddd;
+        color: #ffffff;
+        content: attr(data-tooltip);
+        font-size: 90%;
+        left: 50%;
+        line-height: 125%;
+        margin-bottom: 5px;
+        margin-left: -125px;
+        padding: 7px;
+        position: absolute;
+        text-align: center;
+        width: 250px;
+      }
+
+      [data-tooltip]:after {
+        position: absolute;
+        bottom: 150%;
+        left: 50%;
+        margin-left: -5px;
+        width: 0;
+        border-top: 5px solid #555555;
+        border-right: 5px solid transparent;
+        border-left: 5px solid transparent;
+        content: " ";
+        font-size: 0;
+        line-height: 0;
+        box-shadow: none;
+      }
+
+      [data-tooltip]:hover:before,
+      [data-tooltip]:hover:after {
+        display: block;
+      }
+      </style>
+      ]]></add>
+    </operation>
+    <operation error="skip">
+      <search position="replace"><![CDATA[<?php echo $history['status']; ?>]]></search>
+      <add><![CDATA[
+      <?php if (isset($history['status_description']) && $history['status_description']) { ?>
+      <span class="status-description" data-tooltip="<?php echo $history['status_description']; ?>">
+        <?php echo $history['status']; ?>
+      </span>
+      <?php } else { ?>
+      <?php echo $history['status']; ?>
+      <?php } ?>
+      ]]></add>
+    </operation>
+  </file>
+  -->
+
+</modification>

@@ -1,0 +1,155 @@
+<modification>
+  <id>HUNTBEE STOCK NOTIFY (CORE) PRO OC2.X</id>
+  <version>2.0</version>
+  <vqmver>2.X</vqmver>
+  <author>HUNTBEE.COM | WEBGURUINDIA</author>
+
+  <!-- MENU LINK ADMIN -->
+  <file name="admin/controller/common/menu.php">
+    <operation error="log">
+      <search position="after"><![CDATA[$data['feed'] = $this->url->link('extension/feed', 'token=' . $this->session->data['token'], 'SSL');]]></search>
+      <add><![CDATA[
+      // huntbee_out_of_stock_notify
+      $data['oosn_link'] = $this->url->link('extension/hb_oosn', 'token=' . $this->session->data['token'], 'SSL');
+      ]]></add>
+    </operation>
+
+    <operation error="log">
+      <search position="after"><![CDATA[$data['text_feed'] = $this->language->get('text_feed');]]></search>
+      <add><![CDATA[
+      // huntbee_out_of_stock_notify
+      $data['text_oosn'] = $this->language->get('text_oosn');
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="admin/language/*/common/menu.php">
+    <operation error="log">
+      <search position="before"><![CDATA[$_['text_feed']]]></search>
+      <add><![CDATA[$_['text_oosn']                        = 'Stock Alert'; // huntbee_out_of_stock_notify]]></add>
+    </operation>
+  </file>
+
+  <file name="admin/view/template/common/menu.tpl">
+    <operation error="log">
+      <search position="after"><![CDATA[<li><a href="<?php echo $review; ?>"><?php echo $text_review; ?></a></li>]]>
+      </search>
+      <add><![CDATA[
+      <?php /* huntbee_out_of_stock_notify */ ?>
+      <li><a href="<?php echo $oosn_link; ?>"><?php echo $text_oosn; ?></a></li>
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- STORE FRONT END CHANGES -->
+  <file name="catalog/controller/checkout/cart.php">
+    <operation error="log">
+      <search position="before"><![CDATA[if (isset($this->request->post['recurring_id'])) {]]></search>
+      <add><![CDATA[
+      // huntbee_out_of_stock_notify: out of stock form popup
+      $text = $val = $alloptiontext = '';
+      $set = 0;
+      $hb_oosn_stock_status = $this->config->get('hb_oosn_stock_status');
+      $hb_oosn_product_qty = $this->config->get('hb_oosn_product_qty');
+
+      $this->language->load('module/hb_oosnm');
+
+      if (!$json and !empty($option)) { //option check starts here
+        foreach ($product_options as $product_option) {
+          $product_option_id = $product_option['product_option_id'];
+          $product_id = $this->request->post['product_id'];
+          $product_option_value_id = $option[$product_option['product_option_id']];
+          $allvalues = (array)$product_option_value_id;
+          foreach ($allvalues as $allvalue){
+            $result = $this->db->query("SELECT a.quantity, b.name, c.stock_status_id from ".DB_PREFIX."product_option_value a, ".DB_PREFIX."option_value_description b, ".DB_PREFIX."product c where a.option_value_id = b.option_value_id and a.product_id = c.product_id and a.product_id = '".$product_id."' and a.product_option_id = '".$product_option_id."' and a.product_option_value_id = '".$allvalue."' and b.language_id = '" . (int)$this->config->get('config_language_id') . "' LIMIT 1");
+            $rowcount = $result->num_rows;
+            if ($rowcount == 1){
+              $option_qty = $result->row['quantity'];
+              $value_name = $result->row['name'];
+              $stock_status_id = $result->row['stock_status_id'];
+
+              if ($hb_oosn_stock_status ==  '0'){
+                $stock_status_id = 0;
+              }
+
+              if (($option_qty < $hb_oosn_product_qty) and ($stock_status_id == $hb_oosn_stock_status) and  (isset($option_qty))){
+                $set = 1;
+                $text .= $product_option['name'].' : '. $value_name.', ';
+                $alloptiontext .= $product_option['name'].' : '. $value_name.', ';
+              }else{
+                $alloptiontext .= $product_option['name'].' : '. $value_name.', ';
+              }
+            }else{
+              $alloptiontext .= $product_option['name'].' : '. $allvalue.', ';
+            }
+
+            $arr = array('pi'=> $product_id, 'poi' => $product_option_id, 'povi' => $allvalue);
+            $val .= json_encode($arr).'|';
+          }
+        }
+        if ($set == 1){
+          $json['hberror']['selectedoption'] = sprintf($this->language->get('oosn_text_option'),rtrim($text,', '));
+          $json['hberror']['pid'] = $product_id;
+          $json['hberror']['val'] = '<input type="hidden" id="option_values" value="'.htmlentities(rtrim($val,"|"), ENT_QUOTES).'"><input type="hidden" id="selected_option" value="'.htmlentities(rtrim($text,', '), ENT_QUOTES).'"><input type="hidden" id="all_selected_option" value="'.htmlentities(rtrim($alloptiontext,', '), ENT_QUOTES).'">';
+        }
+      } //option check ends here
+
+      if (!$json){
+        $result = $this->db->query("SELECT quantity,stock_status_id from ".DB_PREFIX."product where product_id = '".$this->request->post['product_id']."'");
+        $product_qty = $result->row['quantity'];
+        $stock_status_id = $result->row['stock_status_id'];
+        if ($hb_oosn_stock_status ==  '0'){
+          $stock_status_id = 0;
+        }
+
+        if (($product_qty < $hb_oosn_product_qty) && ($stock_status_id == $hb_oosn_stock_status)){
+          $json['hberror']['oosn'] = $this->request->post['product_id'];
+        }
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="catalog/controller/product/product.php">
+    <operation error="skip">
+      <search position="replace"><![CDATA[if (!$option_value['subtract'] || ($option_value['quantity'] > 0)) {]]></search>
+      <add><![CDATA[if (!$option_value['subtract'] || $option_value['subtract'] || ($option_value['quantity'] > 0)) {]]></add>
+    </operation>
+  </file>
+
+  <file name="catalog/view/theme/stowear/template/product/product.tpl">
+    <operation>
+      <search position="after" offset="1"><![CDATA[$('.text-danger').parent().addClass('has-error');]]></search>
+      <add><![CDATA[
+      // huntbee_out_of_stock_notify
+      if (json['hberror']) {
+        if (json['hberror']['selectedoption']) {
+          $('#oosn_info_text').html('');
+          $('#oosn_info_text').html(json['hberror']['val']);
+          $('#opt_info').html(json['hberror']['selectedoption']);
+          notify_form(json['hberror']['pid']);
+        }
+        if (json['hberror']['oosn']) {
+          notify_form(json['hberror']['oosn']);
+        }
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="catalog/view/theme/stowear/template/common/header.tpl">
+    <!--
+    <operation>
+      <search position="replace"><![CDATA['catalog/view/theme/'.$config->get( 'config_template' ).'/js/common.js';]]></search>
+      <add><![CDATA['catalog/view/javascript/common_oosn.js';]]></add>
+    </operation>
+    -->
+    <!--
+    <operation>
+      <search position="replace"><![CDATA[catalog/view/javascript/common.js]]></search>
+      <add><![CDATA[catalog/view/javascript/common_oosn.js]]></add>
+    </operation>
+    -->
+  </file>
+
+</modification>

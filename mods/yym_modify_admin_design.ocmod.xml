@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <name>Modify Admin Design</name>
+  <code>yym_admin_design</code>
+  <version>1.0</version>
+  <author>Felix Hsieh</author>
+  <link>http://www.yoyomarket.jp</link>
+
+
+
+  <!-- Modify notification dropdown menu -->
+  <file path="admin/model/catalog/product.php">
+    <operation>
+      <search index="1"><![CDATA[if (isset($data['filter_status']) && !is_null($data['filter_status'])) {]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_design
+      if (isset($data['filter_subtract']) && !is_null($data['filter_subtract'])) {
+        $sql .= " AND p.subtract = '" . (int)$data['filter_subtract'] . "'";
+      }
+      ]]></add>
+    </operation>
+  </file>
+  <file path="admin/controller/common/header.php">
+  	<operation>
+      <search><![CDATA[$data['text_logout'] = $this->language->get('text_logout');]]></search>
+      <add position="after"><![CDATA[
+      // yym_admin_design
+      $data['text_packing_status'] = $this->language->get('text_packing_status');
+      ]]></add>
+    </operation>
+  	<operation>
+      <search><![CDATA[$this->load->model('sale/return');]]></search>
+      <add position="before" offset="1"><![CDATA[
+      // yym_admin_design
+      $data['packing_status_total'] = $this->model_sale_order->getTotalOrders(array('filter_order_status' => '20'));
+      $data['packing_status'] = $this->url->link('sale/order', 'token=' . $this->session->data['token'] . '&filter_order_status=' . '20', 'SSL');
+      ]]></add>
+  	</operation>
+  	<operation>
+  	  <search><![CDATA[$product_total = $this->model_catalog_product->getTotalProducts(array('filter_quantity' => 0));]]></search>
+  	  <add position="replace" offset="4"><![CDATA[
+  	  // yym_admin_design
+  	  // this logic only matches subtract = true, status = enabled, quantity = 0
+  	  // does not match products where minimum quantity > available quantity
+      $product_all = $this->model_catalog_product->getTotalProducts(array('filter_status' => 1));
+      $product_total = $this->model_catalog_product->getTotalProducts(array('filter_subtract' => 1, 'filter_quantity' => 0, 'filter_status' => 1));
+      $product_in = round(100 * ($product_all - $product_total) / $product_all);
+
+  	  if ($product_in < $this->config->get('config_stock_low')) {
+  	    $data['product_class'] = 'danger';
+  	  } elseif ($product_in < $this->config->get('config_stock_high')) {
+  	    $data['product_class'] = 'warning';
+  	  } else {
+  	    $data['product_class'] = 'success';
+  	  }
+
+      $data['product_total'] = $product_total;
+
+  	  $data['product'] = $this->url->link('catalog/product_ext', 'token=' . $this->session->data['token'] . '&filter_subtract=1&filter_quantity=0&filter_status=1', 'SSL');
+  	  ]]></add>
+  	</operation>
+    <operation>
+      <search><![CDATA[$data['logout'] = $this->url->link('common/logout', 'token=' . $this->session->data['token'], 'SSL');]]></search>
+      <add position="after"><![CDATA[
+      // yym_admin_design
+      $data['maintenance'] = $this->config->get('config_maintenance');
+      $data['maintenance_off'] = $this->url->link('setting/setting/maintenance', 'token=' . $this->session->data['token'] . '&mode=0', 'SSL');
+      $data['maintenance_on'] = $this->url->link('setting/setting/maintenance', 'token=' . $this->session->data['token'] . '&mode=1', 'SSL');
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- add method for turning maintenance mode on/off -->
+  <file path="admin/controller/setting/setting.php">
+    <operation>
+      <search><![CDATA[protected function validate() {]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_design
+      public function maintenance() {
+        if (isset($this->request->get['mode']) && ($this->request->get['mode'] == '0' || $this->request->get['mode'] == '1')) {
+          $this->db->query("UPDATE " . DB_PREFIX . "setting SET `value` = '" . (int)$this->request->get['mode'] . "' WHERE `code` = 'config' AND `key` = 'config_maintenance'");
+        }
+        $this->response->redirect($this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL'));
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/view/template/common/header.tpl">
+    <operation>
+      <search><![CDATA[<li><a href="<?php echo $order_status; ?>" style="display: block; overflow: auto;"><span class="label label-warning pull-right"><?php echo $order_status_total; ?></span><?php echo $text_order_status; ?></a></li>]]></search>
+      <add position="after"><![CDATA[
+      <?php /* yym_admin_design */ ?>
+      <li><a href="<?php echo $packing_status; ?>"><span class="label label-success pull-right"><?php echo $packing_status_total; ?></span><?php echo $text_packing_status; ?></a></li>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<li><a href="<?php echo $customer_approval; ?>"><span class="label label-danger pull-right"><?php echo $customer_total; ?></span><?php echo $text_approval; ?></a></li>]]></search>
+      <add position="replace"><![CDATA[]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<li><a href="<?php echo $review; ?>"><span class="label label-danger pull-right"><?php echo $review_total; ?></span><?php echo $text_review; ?></a></li>]]></search>
+      <add position="replace" offset="3"><![CDATA[
+      <?php /* yym_admin_design */ ?>
+      <li><a href="<?php echo $review; ?>"><span class="label label-danger pull-right"><?php echo $review_total; ?></span><?php echo $text_review; ?></a></li>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<li><a href="<?php echo $product; ?>"><span class="label label-danger pull-right"><?php echo $product_total; ?></span><?php echo $text_stock; ?></a></li>]]></search>
+      <add position="replace"><![CDATA[
+      <?php /* yym_admin_design */ ?>
+      <li><a href="<?php echo $product; ?>"><span class="label label-<?php echo $product_class; ?> pull-right"><?php echo $product_total; ?></span><?php echo $text_stock; ?></a></li>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<ul class="nav pull-right">]]></search>
+      <add position="after"><![CDATA[
+      <?php /* yym_admin_design */ ?>
+      <li class="dropdown">
+        <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+          <?php if ($maintenance == 0) { ?>
+            <span class="text-success"><i class="fa fa-check-circle fa-lg"></i></span> Online
+          <?php } else { ?>
+            <span class="text-danger"><i class="fa fa-exclamation-circle fa-lg"></i></span> Maintenance
+          <?php } ?>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-right">
+          <li class="dropdown-header">Maintenance Mode <i class="fa fa-wrench"></i></li>
+          <li><a href="<?php echo $maintenance_off; ?>">Online</a></li>
+          <li><a href="<?php echo $maintenance_on; ?>">Maintenance</a></li>
+        </ul>
+      </li>
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- ping to keep admin logged in -->
+  <file path="admin/view/template/common/footer.tpl">
+    <operation>
+      <search><![CDATA[</body>]]></search>
+      <add position="before"><![CDATA[
+<?php /* yym_admin_design */ ?>
+<script type="text/javascript">
+$(document).ready(function() {
+  window.setInterval(function() {
+    $.get(location.url);
+  }, 30000);
+});
+</script>
+      ]]></add>
+    </operation>
+  </file>
+
+</modification>

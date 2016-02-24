@@ -1,0 +1,720 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <name>Modify Admin Product List / Form</name>
+  <code>yym_admin_product</code>
+  <version>1.0</version>
+  <author>Felix Hsieh</author>
+  <link>http://www.yoyomarket.jp</link>
+
+<!--============================================================================
+remove recurring, download
+=============================================================================-->
+
+  <file path="admin/controller/catalog/product.php">
+    <operation>
+      <search><![CDATA[$this->load->model('catalog/recurring');]]></search>
+      <add position="before"><![CDATA[/* yym_admin_product]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['product_recurrings'] = array();]]></search>
+      <add position="after" offset="1"><![CDATA[*/]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$this->load->model('catalog/download');]]></search>
+      <add position="before"><![CDATA[/* yym_admin_product]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['name'        => $download_info['name']]]></search>
+      <add position="after" offset="3"><![CDATA[*/]]></add>
+    </operation>
+  </file>
+
+
+
+<!--============================================================================
+product_ext/list customization
+=============================================================================-->
+
+  <file path="admin/view/template/catalog/product_ext_list.tpl">
+    <operation>
+      <search><![CDATA[<ul class="breadcrumb bull5i-breadcrumb">]]></search>
+      <add position="replace" offset="4"><![CDATA[]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<h1 class="bull5i-navbar-brand"><i class="fa fa-cubes fa-fw ext-icon"></i> <?php echo $heading_title; ?></h1>]]></search>
+      <add position="replace"><![CDATA[
+      <?php /* yym_admin_product */ ?>
+      <h1><?php echo $heading_title; ?></h1>
+      <ul class="breadcrumb">
+        <?php foreach ($breadcrumbs as $breadcrumb) { ?>
+        <li><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a></li>
+        <?php } ?>
+      </ul>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[btn-warning]]></search>
+      <add position="replace"><![CDATA[btn-info]]></add>
+    </operation>
+    <!-- add stock check and inventory report -->
+    <operation>
+      <search><![CDATA[<div class="nav navbar-nav navbar-btn bull5i-navbar-buttons btn-group">]]></search>
+      <add position="before"><![CDATA[
+      <?php /* yym_admin_product */ ?>
+      <div class="nav navbar-nav navbar-btn bull5i-navbar-buttons btn-group">
+        <ul class="nav navbar-nav navbar-btn>
+          <li class="dropdown">
+            <button id="btn-stock" class="btn btn-info dropdown-toggle" data-toggle="dropdown" type="button">
+              <i class="fa fa-check-square-o"></i> <?php echo $text_stock_check; ?> <b class="caret"></b>
+            </button>
+            <ul class="dropdown-menu" role="menu">
+              <li><a href="<?php echo $href_stock_check_2; ?>" target="_blank"><?php echo $text_stock_check_2; ?></a></li>
+              <li><a href="<?php echo $href_stock_check_1; ?>" target="_blank"><?php echo $text_stock_check_1; ?></a></li>
+            </ul>
+          </li>
+        </ul>
+<!--        <a class="btn btn-default" data-toggle="tooltip" data-container="body" data-placement="bottom" title="<?php echo $text_inventory_report; ?>" href="<?php echo $href_inventory_report; ?>" target="_blank"><i class="fa fa-cubes"></i> <?php echo $text_inventory_report; ?></a>-->
+      </div>
+      ]]></add>
+    </operation>
+    <!-- add ability to clear filters using esc key -->
+    <operation>
+      <search><![CDATA[<?php echo $footer; ?>]]></search>
+      <add position="before"><![CDATA[
+<script type="text/javascript"><!--
+$(document).keyup(function(e) {
+  if (e.keyCode == 27) {
+    $('#clear-global-search-btn').click();
+    $('#clear-filter').click();
+  }
+});
+//--></script>
+      ]]></add>
+    </operation>
+
+  </file>
+
+
+
+<!--============================================================================
+cost/supplier/notes fields
+=============================================================================-->
+
+  <!-- Add cost/supplier to admin product (credit: Spyridon Kazanas, Cost/Supplier fields) -->
+  <file path="admin/controller/catalog/product.php">
+    <operation>
+      <search><![CDATA[$filter_price = $this->request->get['filter_price'];]]></search>
+      <add position="after" offset="3"><![CDATA[
+      // yym_admin_product
+      if (isset($this->request->get['filter_cost'])) {
+        $filter_cost = $this->request->get['filter_cost'];
+      } else {
+        $filter_cost = null;
+      }
+
+      if (isset($this->request->get['filter_profit'])) {
+        $filter_profit = $this->request->get['filter_profit'];
+      } else {
+        $filter_profit = null;
+      }
+
+      if (isset($this->request->get['filter_supplier'])) {
+        $filter_supplier = $this->request->get['filter_supplier'];
+      } else {
+        $filter_supplier = null;
+      }
+
+      if (isset($this->request->get['filter_notes'])) {
+        $filter_notes = $this->request->get['filter_notes'];
+      } else {
+        $filter_notes = null;
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['price'      => $result['price'],]]></search>
+      <add position="after"><![CDATA[
+      // yym_admin_product
+      'cost'      => $result['cost'],
+      'profit'    => ((int)$result['cost'] != 0) ? round(100 * (($result['price']-$result['cost']) / $result['cost'])) : 0,
+      'supplier'  => $result['supplier'],
+      'notes'     => $result['notes'],
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['column_price'] = $this->language->get('column_price');]]></search>
+      <add position="after"><![CDATA[
+      // yym_admin_product
+      $data['column_cost'] = $this->language->get('column_cost');
+      $data['column_profit'] = $this->language->get('column_profit');
+      $data['column_supplier'] = $this->language->get('column_supplier');
+      $data['column_notes'] = $this->language->get('column_notes');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['entry_tax_class'] = $this->language->get('entry_tax_class');]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_product
+      $data['entry_cost'] = $this->language->get('entry_cost');
+      $data['entry_profit'] = $this->language->get('entry_profit');
+      $data['entry_supplier'] = $this->language->get('entry_supplier');
+      $data['entry_notes'] = $this->language->get('entry_notes');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['sort_price'] = $this->url->link('catalog/product', 'token=' . $this->session->data['token'] . '&sort=p.price' . $url, 'SSL');]]></search>
+      <add position="after"><![CDATA[
+      // yym_admin_product
+      $data['sort_cost'] = $this->url->link('catalog/product', 'token=' . $this->session->data['token'] . '&sort=p.cost' . $url, 'SSL');
+      $data['sort_profit'] = $this->url->link('catalog/product', 'token=' . $this->session->data['token'] . '&sort=p.profit' . $url, 'SSL');
+      $data['sort_supplier'] = $this->url->link('catalog/product', 'token=' . $this->session->data['token'] . '&sort=p.supplier' . $url, 'SSL');
+      $data['sort_notes'] = $this->url->link('catalog/product', 'token=' . $this->session->data['token'] . '&sort=p.notes' . $url, 'SSL');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[if (isset($this->request->get['filter_quantity'])) {]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_product
+      if (isset($this->request->get['filter_cost'])) {
+        $url .= '&filter_cost=' . urlencode(html_entity_decode($this->request->get['filter_cost'], ENT_QUOTES, 'UTF-8'));
+      }
+
+      if (isset($this->request->get['filter_profit'])) {
+        $url .= '&filter_profit=' . urlencode(html_entity_decode($this->request->get['filter_profit'], ENT_QUOTES, 'UTF-8'));
+      }
+
+      if (isset($this->request->get['filter_supplier'])) {
+        $url .= '&filter_supplier=' . urlencode(html_entity_decode($this->request->get['filter_supplier'], ENT_QUOTES, 'UTF-8'));
+      }
+
+      if (isset($this->request->get['filter_notes'])) {
+        $url .= '&filter_notes=' . urlencode(html_entity_decode($this->request->get['filter_notes'], ENT_QUOTES, 'UTF-8'));
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['filter_price'] = $filter_price;]]></search>
+      <add position="after"><![CDATA[
+      // yym_admin_product
+      $data['filter_cost'] = $filter_cost;
+      $data['filter_profit'] = $filter_profit;
+      $data['filter_supplier'] = $filter_supplier;
+      $data['filter_notes'] = $filter_notes;
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['price'] = $this->request->post['price'];]]></search>
+      <add position="after" offset="5"><![CDATA[
+      // yym_admin_product
+      if (isset($this->request->post['cost'])) {
+        $data['cost'] = $this->request->post['cost'];
+      } elseif (!empty($product_info)) {
+        $data['cost'] = $product_info['cost'];
+      } else {
+        $data['cost'] = '';
+      }
+
+      if (isset($this->request->post['supplier'])) {
+        $data['supplier'] = $this->request->post['supplier'];
+      } elseif (!empty($product_info)) {
+        $data['supplier'] = $product_info['supplier'];
+      } else {
+        $data['supplier'] = '';
+      }
+
+      if (isset($this->request->post['notes'])) {
+        $data['notes'] = $this->request->post['notes'];
+      } elseif (!empty($product_info)) {
+        $data['notes'] = $product_info['notes'];
+      } else {
+        $data['notes'] = '';
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/model/catalog/product.php">
+    <operation>
+      <search><![CDATA[$this->db->query("INSERT INTO " . DB_PREFIX . "product SET model = '" . $this->db->escape($data['model']) . "', sku = '" . $this->db->escape($data['sku']) . "', upc = '" . $this->db->escape($data['upc']) . "', ean = '" . $this->db->escape($data['ean']) . "', jan = '" . $this->db->escape($data['jan']) . "', isbn = '" . $this->db->escape($data['isbn']) . "', mpn = '" . $this->db->escape($data['mpn']) . "', location = '" . $this->db->escape($data['location']) . "', quantity = '" . (int)$data['quantity'] . "', minimum = '" . (int)$data['minimum'] . "', subtract = '" . (int)$data['subtract'] . "', stock_status_id = '" . (int)$data['stock_status_id'] . "', date_available = '" . $this->db->escape($data['date_available']) . "', manufacturer_id = '" . (int)$data['manufacturer_id'] . "', shipping = '" . (int)$data['shipping'] . "', price = '" . (float)$data['price'] . "', points = '" . (int)$data['points'] . "', weight = '" . (float)$data['weight'] . "', weight_class_id = '" . (int)$data['weight_class_id'] . "', length = '" . (float)$data['length'] . "', width = '" . (float)$data['width'] . "', height = '" . (float)$data['height'] . "', length_class_id = '" . (int)$data['length_class_id'] . "', status = '" . (int)$data['status'] . "', tax_class_id = '" . (int)$data['tax_class_id'] . "', sort_order = '" . (int)$data['sort_order'] . "', date_added = NOW()");]]></search>
+      <add position="replace"><![CDATA[
+      // yym_admin_product
+      $this->db->query("INSERT INTO " . DB_PREFIX . "product SET model = '" . $this->db->escape($data['model']) . "', sku = '" . $this->db->escape($data['sku']) . "', upc = '" . $this->db->escape($data['upc']) . "', ean = '" . $this->db->escape($data['ean']) . "', jan = '" . $this->db->escape($data['jan']) . "', isbn = '" . $this->db->escape($data['isbn']) . "', mpn = '" . $this->db->escape($data['mpn']) . "', location = '" . $this->db->escape($data['location']) . "', quantity = '" . (int)$data['quantity'] . "', minimum = '" . (int)$data['minimum'] . "', subtract = '" . (int)$data['subtract'] . "', stock_status_id = '" . (int)$data['stock_status_id'] . "', date_available = '" . $this->db->escape($data['date_available']) . "', manufacturer_id = '" . (int)$data['manufacturer_id'] . "', shipping = '" . (int)$data['shipping'] . "', price = '" . (float)$data['price'] .  "', cost = '" . (float)$data['cost'] . "', supplier = '" . $this->db->escape($data['supplier']) . "', notes = '" . $this->db->escape($data['notes']) . "', points = '" . (int)$data['points'] . "', weight = '" . (float)$data['weight'] . "', weight_class_id = '" . (int)$data['weight_class_id'] . "', length = '" . (float)$data['length'] . "', width = '" . (float)$data['width'] . "', height = '" . (float)$data['height'] . "', length_class_id = '" . (int)$data['length_class_id'] . "', status = '" . (int)$data['status'] . "', tax_class_id = '" . (int)$data['tax_class_id'] . "', sort_order = '" . (int)$data['sort_order'] . "', date_added = NOW()");
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$this->db->query("UPDATE " . DB_PREFIX . "product SET model = '" . $this->db->escape($data['model']) . "', sku = '" . $this->db->escape($data['sku']) . "', upc = '" . $this->db->escape($data['upc']) . "', ean = '" . $this->db->escape($data['ean']) . "', jan = '" . $this->db->escape($data['jan']) . "', isbn = '" . $this->db->escape($data['isbn']) . "', mpn = '" . $this->db->escape($data['mpn']) . "', location = '" . $this->db->escape($data['location']) . "', quantity = '" . (int)$data['quantity'] . "', minimum = '" . (int)$data['minimum'] . "', subtract = '" . (int)$data['subtract'] . "', stock_status_id = '" . (int)$data['stock_status_id'] . "', date_available = '" . $this->db->escape($data['date_available']) . "', manufacturer_id = '" . (int)$data['manufacturer_id'] . "', shipping = '" . (int)$data['shipping'] . "', price = '" . (float)$data['price'] . "', points = '" . (int)$data['points'] . "', weight = '" . (float)$data['weight'] . "', weight_class_id = '" . (int)$data['weight_class_id'] . "', length = '" . (float)$data['length'] . "', width = '" . (float)$data['width'] . "', height = '" . (float)$data['height'] . "', length_class_id = '" . (int)$data['length_class_id'] . "', status = '" . (int)$data['status'] . "', tax_class_id = '" . (int)$data['tax_class_id'] . "', sort_order = '" . (int)$data['sort_order'] . "', date_modified = NOW() WHERE product_id = '" . (int)$product_id . "'");]]></search>
+      <add position="replace"><![CDATA[
+      // yym_admin_product
+      $this->db->query("UPDATE " . DB_PREFIX . "product SET model = '" . $this->db->escape($data['model']) . "', sku = '" . $this->db->escape($data['sku']) . "', upc = '" . $this->db->escape($data['upc']) . "', ean = '" . $this->db->escape($data['ean']) . "', jan = '" . $this->db->escape($data['jan']) . "', isbn = '" . $this->db->escape($data['isbn']) . "', mpn = '" . $this->db->escape($data['mpn']) . "', location = '" . $this->db->escape($data['location']) . "', quantity = '" . (int)$data['quantity'] . "', minimum = '" . (int)$data['minimum'] . "', subtract = '" . (int)$data['subtract'] . "', stock_status_id = '" . (int)$data['stock_status_id'] . "', date_available = '" . $this->db->escape($data['date_available']) . "', manufacturer_id = '" . (int)$data['manufacturer_id'] . "', shipping = '" . (int)$data['shipping'] . "', price = '" . (float)$data['price'] . "', cost = '" . (float)$data['cost'] . "', supplier = '" . $this->db->escape($data['supplier']) . "', notes = '" . $this->db->escape($data['notes']) . "', points = '" . (int)$data['points'] . "', weight = '" . (float)$data['weight'] . "', weight_class_id = '" . (int)$data['weight_class_id'] . "', length = '" . (float)$data['length'] . "', width = '" . (float)$data['width'] . "', height = '" . (float)$data['height'] . "', length_class_id = '" . (int)$data['length_class_id'] . "', status = '" . (int)$data['status'] . "', tax_class_id = '" . (int)$data['tax_class_id'] . "', sort_order = '" . (int)$data['sort_order'] . "', date_modified = NOW() WHERE product_id = '" . (int)$product_id . "'");
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$sql .= " AND p.price LIKE '" . $this->db->escape($data['filter_price']) . "%'";]]></search>
+      <add position="after" offset="1"><![CDATA[
+      // yym_admin_product
+      if (isset($data['filter_cost']) && !is_null($data['filter_cost'])) {
+        $sql .= " AND p.cost LIKE '" . $this->db->escape($data['filter_cost']) . "%'";
+      }
+
+      if (isset($data['filter_profit']) && !is_null($data['filter_profit'])) {
+        $sql .= " AND p.profit LIKE '" . $this->db->escape($data['filter_profit']) . "%'";
+      }
+
+      if (isset($data['filter_supplier']) && !is_null($data['filter_supplier'])) {
+        $sql .= " AND p.supplier LIKE '" . $this->db->escape($data['filter_supplier']) . "%'";
+      }
+
+      if (isset($data['filter_location']) && !is_null($data['filter_location'])) {
+        $sql .= " AND p.location LIKE '" . $this->db->escape($data['filter_location']) . "%'";
+      }
+
+      if (isset($data['filter_notes']) && !is_null($data['filter_notes'])) {
+        $sql .= " AND p.notes LIKE '%" . $this->db->escape($data['filter_notes']) . "%'";
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$sort_data = array(]]></search>
+      <add position="after" offset="3"><![CDATA[
+      // yym_admin_product
+      'p.cost',
+      'p.profit',
+      'p.supplier',
+      'p.notes',
+      ]]></add>
+    </operation>
+    <!-- remove sorting by profit
+    <operation>
+      <search><![CDATA[if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {]]></search>
+      <add position="replace" offset="1"><![CDATA[
+      // yym_admin_product
+      if (isset($data['sort']) && in_array($data['sort'], $sort_data)) {
+        if ($data['sort'] === "p.profit"){
+          $sql = "SELECT *, (p.price-p.cost) as profit".substr($sql,8)." ORDER BY profit";
+        } else {
+          $sql .= " ORDER BY " . $data['sort'];
+        }
+      ]]></add>
+    </operation>
+    -->
+  </file>
+
+  <file path="admin/view/template/catalog/product_form.tpl">
+    <operation>
+      <search><![CDATA[<input type="text" name="price" value="<?php echo $price; ?>" placeholder="<?php echo $entry_price; ?>" id="input-price" class="form-control" />]]></search>
+      <add position="after" offset="2"><![CDATA[
+      <?php /* yym_admin_product */ ?>
+      <div class="form-group">
+        <label class="col-sm-2 control-label" for="input-cost"><?php echo $entry_cost; ?></label>
+        <div class="col-sm-10">
+          <input type="text" name="cost" value="<?php echo $cost; ?>" placeholder="<?php echo $entry_cost; ?>" id="input-cost" class="form-control" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-sm-2 control-label" for="input-supplier"><?php echo $entry_supplier; ?></label>
+        <div class="col-sm-10">
+          <input type="text" name="supplier" value="<?php echo $supplier; ?>" placeholder="<?php echo $entry_supplier; ?>" id="input-supplier" class="form-control" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-sm-2 control-label" for="input-notes"><?php echo $entry_notes; ?></label>
+        <div class="col-sm-10">
+          <input type="text" name="notes" value="<?php echo $notes; ?>" placeholder="<?php echo $entry_notes; ?>" id="input-notes" class="form-control" />
+        </div>
+      </div>
+      ]]></add>
+    </operation>
+    <!-- remove recurring js -->
+    <operation>
+      <search><![CDATA[var recurring_row = <?php echo $recurring_row; ?>;]]></search>
+      <add position="replace"><![CDATA[]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<?php foreach ($recurrings as $recurring) { ?>]]></search>
+      <add position="replace" offset="2"><![CDATA[]]></add>
+    </operation>
+  </file>
+
+  <!-- Add cost/supplier/profit to standard admin product list -->
+  <!-- Deprecated for product_ext
+  <file path="admin/view/template/catalog/product_list.tpl">
+    <operation>
+      <search><![CDATA[<a href="<?php echo $sort_price; ?>"><?php echo $column_price; ?></a>]]></search>
+      <add position="after" offset="1"><![CDATA[
+      <?php /* yym_admin_product */ ?>
+      <td class="text-left">
+        <?php if ($sort == 'p.cost') { ?>
+        <a href="<?php echo $sort_cost; ?>" class="<?php echo strtolower($order); ?>"><?php echo $column_cost; ?></a>
+        <?php } else { ?>
+        <a href="<?php echo $sort_cost; ?>"><?php echo $column_cost; ?></a>
+        <?php } ?>
+      </td>
+      <td class="text-left">
+        <?php if ($sort == 'p.profit') { ?>
+        <a href="<?php echo $sort_profit; ?>" class="<?php echo strtolower($order); ?>"><?php echo $column_profit; ?></a>
+        <?php } else { ?>
+        <a href="<?php echo $sort_profit; ?>"><?php echo $column_profit; ?></a>
+        <?php } ?>
+      </td>
+      <td class="text-left">
+        <?php if ($sort == 'p.supplier') { ?>
+        <a href="<?php echo $sort_supplier; ?>" class="<?php echo strtolower($order); ?>"><?php echo $column_supplier; ?></a>
+        <?php } else { ?>
+        <a href="<?php echo $sort_supplier; ?>"><?php echo $column_supplier; ?></a>
+        <?php } ?>
+      </td>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<td class="text-right"><?php if ($product['quantity'] <= 0) { ?>]]></search>
+      <add position="before"><![CDATA[
+      <?php /* yym_admin_product */ ?>
+      <td class="text-left"><?php echo $product['cost']; ?></td>
+      <td class="text-left">
+        <?php
+          $profit = (int)$product['profit'];
+          $class = 'default';
+          if ($product['special']) {
+            $profit = ($product['cost'] != 0) ? round(100 * ($product['special'] - $product['cost']) / $product['cost']) : 0;
+          }
+          if ($profit >= 45) {
+            $class = 'success';
+          } elseif ($profit >= 35) {
+            $class = 'warning';
+          } else {
+            $class = 'danger';
+          }
+        ?>
+        <span class="label label-<?php echo $class; ?>"><?php echo $product['profit']; ?>%</span>
+        </td>
+        <td class="text-left"><?php echo $product['supplier']; ?></td>
+      ]]></add>
+    </operation>
+  </file>
+  -->
+
+
+
+  <!-- Add product cost/supplier/notes to admin product ext list -->
+  <file path="admin/model/catalog/product_ext.php">
+    <operation>
+      <search><![CDATA[case 'price':]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_product
+      case 'cost':
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['price'             => 'p.price',]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_product
+      'cost'              => 'p.cost',
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['price'     => 'p.price',]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_product
+      'cost'      => 'p.cost',
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['price',]]></search>
+      <add position="replace"><![CDATA['price', 'cost',]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[case 'location':]]></search>
+      <add position="after"><![CDATA[
+      // yym_admin_product
+      case 'supplier':
+      case 'notes':
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['location'          => 'p.location',]]></search>
+      <add position="after"><![CDATA[
+      // yym_admin_product
+      'supplier'          => 'p.supplier',
+      'notes'             => 'p.notes',
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['location'  => 'p.location',]]></search>
+      <add position="after"><![CDATA[
+      // yym_admin_product
+      'supplier'  => 'p.supplier',
+      'notes'     => 'p.notes',
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['location',]]></search>
+      <add position="replace"><![CDATA['location', 'supplier', 'notes',]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/controller/catalog/product_ext.php">
+    <operation>
+      <search><![CDATA[case 'price':]]></search>
+      <add position="before"><![CDATA[
+                        // yym_admin_product
+                        case 'cost':
+                            $value = $result['cost'];
+                            break;
+                        case 'profit':
+                            $value = '';
+                            if ((int)$result['status']) {
+                              $price = ($result['special_price'] > 0) ? $result['special_price'] : $result['price'];
+                              $profit = ((int)$result['cost'] > 0) ? round(100 * ($price - $result['cost']) / $result['cost']) : 0;
+
+                              if ($profit < $this->config->get('config_markup_low')) {
+                                $product['profit_class'] = 'danger';
+                              } elseif ($profit < $this->config->get('config_markup_high')) {
+                                $product['profit_class'] = 'warning';
+                              } else {
+                                $product['profit_class'] = 'success';
+                              }
+
+                              $value = $profit . '%';
+                            }
+                            break;
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[case 'location':]]></search>
+      <add position="after"><![CDATA[
+                        // yym_admin_product
+                        case 'supplier':
+                        case 'notes':
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['price',]]></search>
+      <add position="replace"><![CDATA['price', 'cost', 'profit',]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['location',]]></search>
+      <add position="replace"><![CDATA['location', 'supplier', 'notes',]]></add>
+    </operation>
+    <!-- add stock check and inventory report -->
+    <operation>
+      <search><![CDATA[$data['multilingual_seo'] = $this->config->get('aqe_multilingual_seo');]]></search>
+      <add position="after"><![CDATA[
+      $data['text_stock_check'] = $this->language->get('text_stock_check');
+      $data['text_stock_check_1'] = $this->language->get('text_stock_check_1');
+      $data['text_stock_check_2'] = $this->language->get('text_stock_check_2');
+      $data['href_stock_check_1'] = $this->url->link('catalog/product/stock', '&floor=1&token=' . $this->session->data['token'], 'SSL');
+      $data['href_stock_check_2'] = $this->url->link('catalog/product/stock', '&floor=2&token=' . $this->session->data['token'], 'SSL');
+      $data['text_inventory_report'] = $this->language->get('text_inventory_report');
+      $data['href_inventory_report'] = $this->url->link('catalog/product/inventory', '&token=' . $this->session->data['token'], 'SSL');
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/controller/module/admin_quick_edit.php">
+    <operation>
+      <search index="0"><![CDATA['price']]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_product
+      'cost'              => array('display' => 1, 'editable' => 1, 'index' =>  65, 'align' =>  'text-right', 'type' =>   'price_qe', 'sort' => 'p.cost'          , 'rel' => array()),
+      'profit'            => array('display' => 1, 'editable' => 0, 'index' =>  75, 'align' => 'text-center', 'type' =>           '', 'sort' => ''                , 'rel' => array()),
+      'supplier'          => array('display' => 0, 'editable' => 1, 'index' => 155, 'align' =>   'text-left', 'type' =>         'qe', 'sort' => 'p.supplier'      , 'rel' => array()),
+      'notes'             => array('display' => 1, 'editable' => 1, 'index' => 156, 'align' =>   'text-left', 'type' =>         'qe', 'sort' => 'p.notes'         , 'rel' => array()),
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/view/template/catalog/product_ext_list.tpl">
+    <operation>
+      <search><![CDATA[<?php if (in_array("price", $columns)) { ?>]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_product
+      <?php if (in_array("cost", $columns)) { ?>{targets:["col_cost"],createdCell:function(e,l,t){$(e).html(l)}},<?php } ?>
+      <?php if (in_array("profit", $columns)) { ?>{targets:["col_profit"],createdCell:function(e,l,t){$(e).html((l!='')?$("<span/>",{"class":"label label-"+t.profit_class}).html(l):'')}},<?php } ?>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[addClass(0>a?"text-danger":5>a?"text-warning":"text-success")]]></search>
+      <add position="replace"><![CDATA[addClass(0>=a?"label label-danger":5>a?"label label-warning":"label label-success")]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[case 'location':]]></search>
+      <add position="after"><![CDATA[
+      // yym_admin_product
+      case 'supplier':
+      case 'notes':
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="1"><![CDATA[case 'image':]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_product
+      case 'profit':
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+<!--============================================================================
+add stock check view
+=============================================================================-->
+
+  <file path="admin/controller/catalog/product.php">
+    <operation>
+      <search><![CDATA[protected function getForm() {]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_product
+      public function stock() {
+        $data = array();
+
+        if ($this->request->server['HTTPS']) {
+          $data['base'] = HTTPS_SERVER;
+        } else {
+          $data['base'] = HTTP_SERVER;
+        }
+
+        $this->load->model('catalog/product');
+
+        $filter_data = array(
+          'filter_supplier' => 'Costco'
+        );
+
+        $product_data = $this->model_catalog_product->getProducts($filter_data);
+
+        $colors = array(
+          'Orange' => 1,
+          'Pink'   => 2,
+          'Yellow' => 3,
+          'Green'  => 4,
+          'Purple' => 5,
+          'Blue'   => 6
+        );
+
+        $sort = array(
+          'color'   => array(),
+          'section' => array(),
+          'status'  => array(),
+          'model'   => array()
+        );
+
+        // include all by default
+        $include = array(0, 1, 2, 3, 4, 5, 6);
+
+        if (isset($this->request->get['floor'])) {
+          if ($this->request->get['floor'] == '1') {
+            $include = array(3, 4, 5, 6); // Yellow, Green, Purple, Blue
+          } else if ($this->request->get['floor'] == '2') {
+            $include = array(0, 1, 2); // Unknown, Orange, Pink
+          }
+        }
+
+        foreach ($product_data as $key => $row) {
+          $color = 0;
+          $section = 0;
+
+          $parse = explode('-', $row['location']);
+
+          if (array_key_exists($parse[0], $colors) && in_array($colors[$parse[0]], $include)) {
+            $color = $colors[$parse[0]];
+
+            if (isset($parse[1]) && is_numeric($parse[1])) {
+              $section = (int)$parse[1];
+            }
+
+            $sort['color'][$key] = $color;
+            $sort['section'][$key] = $section;
+            $sort['status'][$key] = $row['status'];
+            $sort['model'][$key] = $row['model'];
+
+            $product_data[$key]['cost'] = $this->currency->format($product_data[$key]['cost'], $this->config->get('config_currency'));
+          } else {
+            unset($product_data[$key]);
+          }
+        }
+
+        array_multisort($sort['color'], SORT_ASC, $sort['section'], SORT_ASC, $sort['status'], SORT_DESC, $sort['model'], SORT_ASC, $product_data);
+
+        $data['products'] = $product_data;
+
+        $data['date'] = date($this->language->get('date_format_short'));
+
+        $this->response->setOutput($this->load->view('catalog/product_stock.tpl', $data));
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+<!--============================================================================
+customize catalog/product/edit title and heading
+=============================================================================-->
+  <file path="admin/controller/catalog/product.php">
+    <operation>
+      <search index="1"><![CDATA[$data['heading_title'] = $this->language->get('heading_title');]]></search>
+      <add position="replace"><![CDATA[
+      // yym_admin_product
+      if (isset($this->request->get['product_id'])) {
+        $data['heading_title'] = $this->language->get('heading_edit') . ' ' . $this->db->query("SELECT name FROM " . DB_PREFIX . "product_description WHERE product_id = '" . (int)$this->request->get['product_id'] . "' AND language_id = '" . (int)$this->config->get('config_language_id') . "'")->row['name'];
+        $this->document->setTitle($data['heading_title']);
+      } else {
+        $data['heading_title'] = $this->language->get('heading_title');
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+<!--============================================================================
+product/form fields
+=============================================================================-->
+
+  <!-- Hide extra fields from admin product info page -->
+  <!--
+    5: SKU
+    6: UPC
+    7: EAN
+    8: JAN
+    9: ISBN
+    10: MPN
+    16: Tax class
+    25: Dimensions
+    26: Length class
+    30: Sort order
+    34: Store
+  -->
+  <file path="admin/view/template/catalog/product_form.tpl">
+    <operation>
+      <search position="replace" index="5,6,7,8,9,10,16,25,26,30,34"><![CDATA[<div class="form-group">]]></search>
+      <add position="replace"><![CDATA[
+      <?php /* yym_admin_product */ ?>
+      <div class="form-group hidden">
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<label class="col-sm-2 control-label" for="input-download">]]></search>
+      <add position="before" offset="1"><![CDATA[<?php /* yym_admin_product: remove download]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<label class="col-sm-2 control-label" for="input-download">]]></search>
+      <add position="after" offset="11"><![CDATA[*/ ?>]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<li><a href="#tab-recurring" data-toggle="tab"><?php echo $tab_recurring; ?></a></li>]]></search>
+      <add position="replace"><![CDATA[]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<div class="tab-pane" id="tab-recurring">]]></search>
+      <add position="before"><![CDATA[<?php /* yym_admin_product: remove recurring]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<div class="tab-pane" id="tab-discount">]]></search>
+      <add position="before"><![CDATA[*/ ?>]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<li><a href="#tab-reward" data-toggle="tab"><?php echo $tab_reward; ?></a></li>]]></search>
+      <add position="replace"><![CDATA[]]></add>
+    </operation>
+  </file>
+</modification>

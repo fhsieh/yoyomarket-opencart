@@ -1,0 +1,32 @@
+.category-wall {
+	
+}
+
+	.category-wall > div > div {
+		padding-top: 30px;
+	}
+		
+		.category-wall .name {
+			padding: 8px 0px 2px 0px;
+		}
+		
+			.category-wall .name a {
+				font-size: 16px;
+				font-weight: 700;
+			}
+		
+		.category-wall ul {
+			list-style: none;
+			margin: 0px;
+			padding: 5px 0px 0px 0px;
+		}
+		
+			.category-wall ul li {
+				padding: 2px 0px;
+			}
+				
+@media (max-width: 767px) {
+	.responsive .category-wall > div > div {
+		padding-top: 20px;
+	}
+}

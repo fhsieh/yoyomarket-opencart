@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+	<code>ss_mailchimp</code>
+	<name>Mailchimp Extension</name>
+	<version>2.3.2</version>
+	<author>Saif Sulaiman</author>
+	<link>http://www.webberoo.in</link>
+
+	<file path="admin/language/*/common/menu.php">
+		<operation error="abort">
+			<search><![CDATA[$_['text_zone']]]></search>
+			<add position="before"><![CDATA[$_['text_mailchimp']               = 'MailChimp';]]></add>
+		</operation>
+	</file>
+	<file path="admin/controller/common/menu.php">
+		<operation error="abort">
+			<search><![CDATA[$data['text_zone'] = $this->language->get('text_zone');]]></search>
+			<add position="before"><![CDATA[
+				$data['text_mailchimp'] = $this->language->get('text_mailchimp');
+			]]></add>
+		</operation>
+		<operation error="abort">
+			<search><![CDATA[$data['zone'] = $this->url->link('localisation/zone', 'token=' . $this->session->data['token'], 'SSL');]]></search>
+			<add position="before"><![CDATA[
+				$data['mailchimp_setting'] = $this->url->link('mail_chimp/setting', 'token=' . $this->session->data['token'], 'SSL');
+			]]></add>
+		</operation>
+	</file>
+
+	<file path="admin/view/template/common/menu.tpl">
+		<operation error="abort">
+			<search><![CDATA[<li><a href="<?php echo $setting; ?>"><?php echo $text_setting; ?></a></li>]]></search>
+			<add position="after"><![CDATA[
+				<li><a href="<?php echo $mailchimp_setting; ?>"><?php echo $text_mailchimp; ?></a></li>
+			]]></add>
+		</operation>
+	</file>
+
+	<!-- ADMIN CUSTOMER MODULE UPDATE -->
+	<file path="admin/model/sale/customer.php">
+		<operation error="abort">
+			<search><![CDATA[class ModelSaleCustomer extends Model {]]></search>
+			<add position="after" index="1"><![CDATA[
+	public function subscribeMailChimp($email = null, $fname = null, $lname = null, $customer_group_id=0) {
+
+		$mailchimp_api_key = trim($this->config->get('mailchimp_api'));
+		$mailchimp_list_id = trim($this->config->get('mailchimp_list_'.$customer_group_id));
+
+		$result = array();
+		if( strlen( $mailchimp_list_id ) > 1 && strlen( $mailchimp_api_key ) > 1 ){
+			if(!empty($email)){
+				require_once DIR_SYSTEM . 'library/Drewm/MailChimp.php';
+				$MailChimp = new \Drewm\MailChimp($mailchimp_api_key);
+
+				$result = $MailChimp->call('lists/subscribe', array(
+	                'id'                => $mailchimp_list_id,
+	                'email'             => array('email'=>trim($email)),
+	                'merge_vars'        => array('FNAME'=>trim($fname), 'LNAME'=>trim($lname)),
+	                'double_optin'      => false,
+	                'update_existing'   => true,
+	                'replace_interests' => false,
+	                'send_welcome'      => false,
+	            ));
+			}
+		}
+
+		return $result;
+	}
+
+	public function updateMailChimp($customer_id, $new_data = array()) {
+
+
+		$customer_info = $this->getCustomer($customer_id);
+		$result = array();
+
+		if(
+			$customer_info['email'] != $new_data['email'] ||
+			$customer_info['firstname'].' '.$customer_info['lastname'] != $new_data['firstname'].' '.$new_data['lastname']
+		){
+			$mailchimp_api_key = trim($this->config->get('mailchimp_api'));
+			$mailchimp_list_id = trim($this->config->get('mailchimp_list_'.$customer_info['customer_group_id']));
+
+			if( strlen( $mailchimp_list_id ) > 1 && strlen( $mailchimp_api_key ) > 1 ){
+				if(!empty($new_data['email'])){
+					require_once DIR_SYSTEM . 'library/Drewm/MailChimp.php';
+					$MailChimp = new \Drewm\MailChimp($mailchimp_api_key);
+
+					$result = $MailChimp->call('lists/update-member', array(
+		                'id'                => $mailchimp_list_id,
+		                'email'             => array(
+		                	'leid'=>trim($new_data['leid'])
+		                ),
+		                'merge_vars'        => array('EMAIL' => trim($new_data['email']),'FNAME'=>trim($new_data['firstname']), 'LNAME'=>trim($new_data['lastname'])),
+		            ));
+
+				}
+			}
+		}
+
+		return $result;
+
+	}
+
+	public function deleteSubscriberMailChimp($email = null, $customer_group_id=0) {
+
+		$mailchimp_api_key = trim($this->config->get('mailchimp_api'));
+		$mailchimp_list_id = trim($this->config->get('mailchimp_list_'.$customer_group_id));
+
+		if( strlen( $mailchimp_list_id ) > 1 && strlen( $mailchimp_api_key ) > 1 ){
+			if(!empty($email)){
+				require_once DIR_SYSTEM . 'library/Drewm/MailChimp.php';
+				$MailChimp = new \Drewm\MailChimp($mailchimp_api_key);
+
+				$result = $MailChimp->call('lists/unsubscribe', array(
+			                'id'                => $mailchimp_list_id,
+			                'email'             => array('email'=>trim($email)),
+			                'delete_member'     => true,
+			                'send_goodbye'      => false,
+			                'send_notify'   	=> false,
+			            ));
+			}
+		}
+	}
+
+	public function unsubscribeMailChimp($email = null, $customer_group_id=0) {
+		$mailchimp_api_key = trim($this->config->get('mailchimp_api'));
+		$mailchimp_list_id = trim($this->config->get('mailchimp_list_'.$customer_group_id));
+
+		$result = array();
+		if( strlen( $mailchimp_list_id ) > 1 && strlen( $mailchimp_api_key ) > 1 ){
+
+			if(!empty($email)){
+				require_once DIR_SYSTEM . 'library/Drewm/MailChimp.php';
+				$MailChimp = new \Drewm\MailChimp($mailchimp_api_key);
+
+				$result = $MailChimp->call('lists/unsubscribe', array(
+	                'id'                => $mailchimp_list_id,
+	                'email'             => array('email'=>trim($email)),
+	                'delete_member'     => false,
+	                'send_goodbye'      => false,
+	                'send_notify'   	=> false,
+	            ));
+			}
+		}
+
+		return $result;
+	}
+		]]></add>
+		</operation>
+		<operation error="abort">
+			<search><![CDATA[$customer_id = $this->db->getLastId();]]></search>
+			<add position="after" index="1"><![CDATA[
+		if(isset($data['newsletter']) && (int)$data['newsletter'] == 1){
+			$this->subscribeMailChimp($this->db->escape($data['email']), $this->db->escape($data['firstname']),$this->db->escape($data['lastname']), (int)$data['customer_group_id']);
+		}]]></add>
+		</operation>
+		<operation error="abort">
+			<search><![CDATA[public function deleteCustomer($customer_id) {]]></search>
+			<add position="after" index="1"><![CDATA[
+		$customer_info = $this->getCustomer($customer_id);
+		$this->deleteSubscriberMailChimp($customer_info['email'], $customer_info['customer_group_id']);
+			]]></add>
+		</operation>
+		<operation error="abort">
+			<search><![CDATA[public function editCustomer($customer_id, $data) {]]></search>
+			<add position="after" index="1"><![CDATA[
+
+		$customer_info = $this->getCustomer($customer_id);
+
+		if((int)$data['customer_group_id'] != (int)$customer_info['customer_group_id']){
+			$this->deleteSubscriberMailChimp($customer_info['email'], $customer_info['customer_group_id']);
+			if((int)$data['newsletter'] == 1){
+				$this->subscribeMailChimp($this->db->escape($data['email']), $this->db->escape($data['firstname']),$this->db->escape($data['lastname']), $data['customer_group_id']);
+			}
+		} else {
+			if((int)$data['newsletter'] == 0){
+				$result = $this->unsubscribeMailChimp($customer_info['email'], $customer_info['customer_group_id']);
+			} else {
+				$result = $this->subscribeMailChimp($this->db->escape($customer_info['email']), $this->db->escape($data['firstname']),$this->db->escape($data['lastname']), $data['customer_group_id']);
+			}
+
+			if(isset($result['leid'])){
+				$data['leid'] =  $result['leid'];
+				$this->updateMailChimp($customer_id, $data);
+			}
+
+		}
+
+			]]></add>
+		</operation>
+	</file>
+
+	<!-- FRONTEND CUSTOMER MODULE UPDATE -->
+	<!-- GUEST USER SAVE PATCHES -->
+	<file path="catalog/controller/checkout/guest.php">
+		<operation error="abort">
+			<search><![CDATA[$this->session->data['account'] = 'guest';]]></search>
+			<add position="after"><![CDATA[
+			$this->load->model('account/customer');
+			$this->model_account_customer->subscribeMailChimp(
+				$this->request->post['email'],
+				$this->request->post['firstname'],
+				$this->request->post['lastname'],
+				0
+			);
+			]]></add>
+		</operation>
+	</file>
+	<!-- CUSTOMER MODEL PATCHES -->
+	<file path="catalog/model/account/customer.php">
+		<operation error="abort">
+			<search><![CDATA[$customer_id = $this->db->getLastId();]]></search>
+			<add position="after" index="1"><![CDATA[
+		if(isset($data['newsletter']) && (int)$data['newsletter'] == 1){
+			$this->subscribeMailChimp($this->db->escape($data['email']), $this->db->escape($data['firstname']),$this->db->escape($data['lastname']), (int)$customer_group_id);
+		}]]></add>
+		</operation>
+		<operation error="abort">
+			<search><![CDATA[public function editNewsletter($newsletter) {]]></search>
+			<add position="after" index="1"><![CDATA[
+		$customer_info = $this->getCustomer($this->customer->getId());
+		if((int)$newsletter == 0){
+			$this->unsubscribeMailChimp($customer_info['email'], $customer_info['customer_group_id']);
+		} else {
+			$this->subscribeMailChimp($this->db->escape($customer_info['email']), $this->db->escape($customer_info['firstname']),$this->db->escape($customer_info['lastname']), $customer_info['customer_group_id']);
+		}
+			]]></add>
+		</operation>
+		<operation error="abort">
+			<search><![CDATA[public function editCustomer($data) {]]></search>
+			<add position="after" index="1"><![CDATA[
+
+
+		$customer_info = $this->getCustomer($this->customer->getId());
+
+		if((int)$customer_info['newsletter'] == 0){
+			$result = $this->unsubscribeMailChimp($customer_info['email'], $customer_info['customer_group_id']);
+		} else {
+			$result = $this->subscribeMailChimp($this->db->escape($customer_info['email']), $this->db->escape($data['firstname']),$this->db->escape($data['lastname']), $customer_info['customer_group_id']);
+
+		}
+
+		if(isset($result['leid'])){
+			$data['leid'] =  $result['leid'];
+			$this->updateMailChimp($data);
+		}
+
+
+			]]></add>
+		</operation>
+		<operation error="abort">
+			<search><![CDATA[class ModelAccountCustomer extends Model {]]></search>
+			<add position="after" index="1"><![CDATA[
+	public function subscribeMailChimp($email = null, $fname = null, $lname = null,$customer_group_id=0) {
+
+		$mailchimp_api_key = trim($this->config->get('mailchimp_api'));
+		$mailchimp_list_id = trim($this->config->get('mailchimp_list_'.$customer_group_id));
+
+                $result = array();
+		if( strlen( $mailchimp_list_id ) > 1 && strlen( $mailchimp_api_key ) > 1 ){
+			if(!empty($email)){
+				require_once DIR_SYSTEM . 'library/Drewm/MailChimp.php';
+				$MailChimp = new \Drewm\MailChimp($mailchimp_api_key);
+
+				$result = $MailChimp->call('lists/subscribe', array(
+	                'id'                => $mailchimp_list_id,
+	                'email'             => array('email'=>trim($email)),
+	                'merge_vars'        => array('FNAME'=>trim($fname), 'LNAME'=>trim($lname)),
+	                'double_optin'      => false,
+	                'update_existing'   => true,
+	                'replace_interests' => false,
+	                'send_welcome'      => false,
+	            ));
+			}
+		}
+
+		return $result;
+	}
+
+	/*
+	public function mailLog($message = null){
+		if($message){
+			// In case any of our lines are larger than 70 characters, we should use wordwrap()
+			$message = wordwrap($message, 70, "\r\n");
+
+			// Send
+			mail('saif.silver@gmail.com', 'CM Logs', $message);
+		}
+	}
+	*/
+
+	public function deleteSubscriberMailChimp($email = null, $customer_group_id=0) {
+
+		$mailchimp_api_key = trim($this->config->get('mailchimp_api'));
+		$mailchimp_list_id = trim($this->config->get('mailchimp_list_'.$customer_group_id));
+
+		if( strlen( $mailchimp_list_id ) > 1 && strlen( $mailchimp_api_key ) > 1 ){
+			if(!empty($email)){
+				require_once DIR_SYSTEM . 'library/Drewm/MailChimp.php';
+				$MailChimp = new \Drewm\MailChimp($mailchimp_api_key);
+
+				$result = $MailChimp->call('lists/unsubscribe', array(
+	                'id'                => $mailchimp_list_id,
+	                'email'             => array('email'=>trim($email)),
+	                'delete_member'     => true,
+	                'send_goodbye'      => false,
+	                'send_notify'   	=> false,
+	            ));
+			}
+		}
+	}
+
+	public function updateMailChimp($new_data = array()) {
+
+		$customer_info = $this->getCustomer($this->customer->getId());
+
+		$result = array();
+
+		if(
+			$customer_info['email'] != $new_data['email'] ||
+			$customer_info['firstname'].' '.$customer_info['lastname'] != $new_data['firstname'].' '.$new_data['lastname']
+		){
+			$mailchimp_api_key = trim($this->config->get('mailchimp_api'));
+			$mailchimp_list_id = trim($this->config->get('mailchimp_list_'.$customer_info['customer_group_id']));
+
+			if( strlen( $mailchimp_list_id ) > 1 && strlen( $mailchimp_api_key ) > 1 ){
+				if(!empty($new_data['email'])){
+					require_once DIR_SYSTEM . 'library/Drewm/MailChimp.php';
+					$MailChimp = new \Drewm\MailChimp($mailchimp_api_key);
+
+					$result = $MailChimp->call('lists/update-member', array(
+		                'id'                => $mailchimp_list_id,
+		                'email'             => array(
+		                	'leid'=>trim($new_data['leid'])
+		                ),
+		                'merge_vars'        => array('EMAIL' => trim($new_data['email']),'FNAME'=>trim($new_data['firstname']), 'LNAME'=>trim($new_data['lastname'])),
+		            ));
+
+				}
+			}
+		}
+
+		return $result;
+
+	}
+
+	public function unsubscribeMailChimp($email = null, $customer_group_id=0) {
+		$mailchimp_api_key = trim($this->config->get('mailchimp_api'));
+		$mailchimp_list_id = trim($this->config->get('mailchimp_list_'.$customer_group_id));
+
+		$result = array();
+		if( strlen( $mailchimp_list_id ) > 1 && strlen( $mailchimp_api_key ) > 1 ){
+
+			if(!empty($email)){
+				require_once DIR_SYSTEM . 'library/Drewm/MailChimp.php';
+				$MailChimp = new \Drewm\MailChimp($mailchimp_api_key);
+
+				$result = $MailChimp->call('lists/unsubscribe', array(
+	                'id'                => $mailchimp_list_id,
+	                'email'             => array('email'=>trim($email)),
+	                'delete_member'     => false,
+	                'send_goodbye'      => false,
+	                'send_notify'   	=> false,
+	            ));
+			}
+		}
+		return $result;
+	}
+		]]></add>
+		</operation>
+	</file>
+</modification>

@@ -1,0 +1,32 @@
+
+#content .filter input[type='text']
+{
+	box-sizing: border-box;
+    width: 100%;
+}
+			
+#content .input-name
+{
+	border: 1px solid #ffffff;
+	background: #ffffff;
+	padding: 5px;
+	margin-bottom: 0;
+	box-shadow: none;
+}
+
+#content .input-name:focus
+{
+	border: 1px solid #cccccc;
+	background: '#ffffff';
+}
+		
+#content .default-item
+{
+	background-color: #aaaaaa;
+}
+			
+#content .default-item span
+{
+	color: #ffffff;
+	font-weight: bold;
+}

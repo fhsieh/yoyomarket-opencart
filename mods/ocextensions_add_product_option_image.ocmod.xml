@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <name>Add Product Option Image Handler</name>
+  <code>ocextensions_product_option_image</code>
+  <version>1.2</version>
+  <author>OC Extensions</author>
+  <link>http://www.ocextensions.co.uk</link>
+
+  <!-- Add product option image to catalog product page -->
+  <file path="catalog/controller/product/product.php">
+    <operation>
+      <search><![CDATA[$product_option_value_data[] = array(]]></search>
+      <add position="after"><![CDATA[
+      // ocextensions_product_option_image
+      'thumb'                  => $this->model_tool_image->resize($option_value['image'], $this->config->get('config_image_thumb_width'), $this->config->get('config_image_thumb_height')),
+      'popup'                  => $this->model_tool_image->resize($option_value['image'], $this->config->get('config_image_popup_width'), $this->config->get('config_image_popup_height')),
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/view/theme/stowear/template/product/product.tpl">
+    <operation>
+      <search index="0,1,3"><![CDATA[<?php foreach ($option['product_option_value'] as $option_value)]]></search>
+      <add position="after"><![CDATA[
+      <?php /* ocextensions_product_option_image */ ?>
+      <?php if (!$option_value['thumb'] || strpos($option_value['thumb'], 'no_image')) $option_value['thumb'] = $thumb; ?>
+      <?php if ($option_value['popup'] == '') $option_value['popup'] = 'no_image'; ?>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[class="form-control"]]></search>
+      <add position="replace"><![CDATA[class="change-image form-control"]]></add>
+    </operation>
+    <operation>
+      <search index="0"><![CDATA[><?php echo $option_value['name']; ?>]]></search>
+      <add position="replace"><![CDATA[class="change-image" src="<?php echo $option_value['thumb']; ?>" val="<?php echo $option_value['popup']; ?>"><?php echo $option_value['name']; ?>]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<input type="radio" name="option[<?php echo $option['product_option_id']; ?>]"]]></search>
+      <add position="replace"><![CDATA[
+      <input type="radio" name="option[<?php echo $option['product_option_id']; ?>]" class="change-image" src="<?php echo $option_value['thumb']; ?>" val="<?php echo $option_value['popup']; ?>"
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<?php echo $footer; ?>]]></search>
+      <add position="before"><![CDATA[
+      <?php /* ocextensions_product_option_image */ ?>
+      <script type="text/javascript">
+      $(document).on("change", ".change-image", function() {
+        $("option:selected", $(this)).each(function() {
+          if ($(this).attr('src') != "no_image") {
+            $('#image').attr('src', $(this).attr('src'));
+            $('#image').parent().attr('href', $(this).attr('val'));
+          }
+        });
+      });
+      </script>
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Add product option image to Stowear checkout cart -->
+  <file path="catalog/controller/checkout/cart.php">
+    <operation>
+      <search><![CDATA[$this->load->model('tool/image');]]></search>
+      <add position="after"><![CDATA[
+      // ocextensions_product_option_image
+      $this->load->model('catalog/product');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$product_total = 0;]]></search>
+      <add position="after"><![CDATA[
+      // ocextensions_product_option_image
+      $p_options = $this->model_catalog_product->getProductOptions($product['product_id']);
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$option_data[] = array]]></search>
+      <add position="before"><![CDATA[
+      // ocextensions_product_option_image
+      $oimage = '';
+      if ($option['type'] == 'select' || $option['type'] == 'radio' || $option['type'] == 'checkbox' || $option['type'] == 'image') {
+        foreach ($p_options as $pos) {
+          if (is_array($pos['product_option_value'])) {
+            foreach ($pos['product_option_value'] as $oname) {
+              if ($oname['name'] == $option['value']) $oimage = $oname['image'] ;
+              if ($oimage == 'no_image.jpg') $oimage = '';
+            }
+          }
+        }
+      }
+      $ximage = $this->model_tool_image->resize($oimage,$this->config->get('config_image_cart_width'), $this->config->get('config_image_cart_height'));
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$option_data[] = array(]]></search>
+      <add position="after"><![CDATA[
+      // ocextensions_product_option_image
+      'oimage'=> $ximage,
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/view/theme/stowear/template/checkout/cart.tpl">
+    <operation>
+      <search><![CDATA[if ($product['thumb']]]></search>
+      <add position="before" offset="1"><![CDATA[
+      <?php foreach ($product['option'] as $option) {
+        // ocextensions_product_option_image
+        if ($option['oimage']) $product['thumb'] = $option['oimage'];
+      } ?>
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- Add product image to Quick Checkout cart -->
+  <file path="catalog/controller/quickcheckout/cart.php">
+    <operation>
+      <search><![CDATA[$this->load->model('tool/image');]]></search>
+      <add position="after"><![CDATA[
+      // ocextensions_product_option_image
+      $this->load->model('catalog/product');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$product_total = 0;]]></search>
+      <add position="after"><![CDATA[
+      // ocextensions_product_option_image
+      $p_options = $this->model_catalog_product->getProductOptions($product['product_id']);
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$option_data[] = array]]></search>
+      <add position="before"><![CDATA[
+      // ocextensions_product_option_image
+      $oimage = '';
+      if ($option['type'] == 'select' || $option['type'] == 'radio' || $option['type'] == 'checkbox' || $option['type'] == 'image') {
+        foreach ($p_options as $pos) {
+          if (is_array($pos['product_option_value'])) {
+            foreach ($pos['product_option_value'] as $oname) {
+              if ($oname['name'] == $option['value']) $oimage = $oname['image'] ;
+              if ($oimage == 'no_image.jpg') $oimage = '';
+            }
+          }
+        }
+      }
+      $ximage = $this->model_tool_image->resize($oimage,$this->config->get('config_image_cart_width'), $this->config->get('config_image_cart_height'));
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$option_data[] = array(]]></search>
+      <add position="after"><![CDATA[
+      // ocextensions_product_option_image
+      'oimage'=> $ximage,
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/view/theme/stowear/template/quickcheckout/cart.tpl">
+    <operation>
+      <search><![CDATA[if ($product['thumb']]]></search>
+      <add position="before" offset="1"><![CDATA[
+      <?php foreach ($product['option'] as $option) {
+        // ocextensions_product_option_image
+        if ($option['oimage']) $product['thumb'] = $option['oimage'];
+      } ?>
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- Add product image to dropdown cart -->
+  <file path="catalog/controller/common/cart.php">
+    <operation>
+      <search><![CDATA[$this->load->model('tool/image');]]></search>
+      <add position="after"><![CDATA[
+      // ocextensions_product_option_image
+      $this->load->model('catalog/product');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$this->cart->getProducts()]]></search>
+      <add position="after"><![CDATA[
+      // ocextensions_product_option_image
+      $p_options = $this->model_catalog_product->getProductOptions($product['product_id']);
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$option_data[] = array]]></search>
+      <add position="before"><![CDATA[
+      // ocextensions_product_option_image
+      $oimage = '';
+      if ($option['type'] == 'select' || $option['type'] == 'radio' || $option['type'] == 'checkbox' || $option['type'] == 'image') {
+        foreach ($p_options as $pos) {
+          if (is_array($pos['product_option_value'])) {
+            foreach ($pos['product_option_value'] as $oname) {
+              if ($oname['name'] == $option['value']) $oimage = $oname['image'] ;
+              if ($oimage == 'no_image.jpg') $oimage = '';
+            }
+          }
+        }
+      }
+      $ximage = $this->model_tool_image->resize($oimage,$this->config->get('config_image_cart_width'), $this->config->get('config_image_cart_height'));
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$option_data[] = array(]]></search>
+      <add position="after"><![CDATA[
+      // ocextensions_product_option_image
+      'oimage'=> $ximage,
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/view/theme/stowear/template/common/cart.tpl">
+    <operation>
+      <search><![CDATA[if ($product['thumb']]]></search>
+      <add position="before" offset="1"><![CDATA[
+      <?php foreach ($product['option'] as $option) {
+        // ocextensions_product_option_image
+        if ($option['oimage']) $product['thumb'] = $option['oimage'];
+      } ?>
+      ]]></add>
+    </operation>
+  </file>
+
+</modification>

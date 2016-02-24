@@ -1,0 +1,694 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <name>Modify Shopping Cart / Quick Checkout</name>
+  <code>yym_catalog_cart_checkout</code>
+  <version>1.0</version>
+  <author>Felix Hsieh</author>
+  <link>http://www.yoyomarket.jp</link>
+
+<!--============================================================================
+checkout/cart
+=============================================================================-->
+
+
+
+<!--============================================================================
+quickcheckout/checkout
+=============================================================================-->
+
+  <!-- Add Continue Shopping to Quick Checkout checkout page -->
+  <file path="catalog/controller/quickcheckout/terms.php">
+    <operation>
+      <search><![CDATA[$this->language->load('quickcheckout/checkout');]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_design
+      $this->load->language('checkout/cart');
+      $data['button_shopping'] = $this->language->get('button_shopping');
+      $data['continue'] = $this->url->link('common/home');
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+<!--============================================================================
+quickcheckout/payment address
+=============================================================================-->
+
+  <!-- Disable "same address" if user selects a country besides Japan -->
+  <file path="catalog/view/theme/stowear/template/quickcheckout/guest.tpl">
+    <operation>
+      <search><![CDATA[$('#payment-address select[name=\'country_id\']').trigger('change');]]></search>
+      <add position="before" offset="2"><![CDATA[
+      // yym_catalog_cart_checkout
+      if (this.value != '107') {
+        if ($('#payment-address input[name=\'shipping_address\']:checked').val()) {
+          $('#payment-address input[name=\'shipping_address\']').prop('checked', false).trigger('change');
+          reloadShippingMethod('shipping');
+        }
+        $('#payment-address input[name=\'shipping_address\']').prop('disabled', true);
+      } else {
+        $('#payment-address input[name=\'shipping_address\']').prop('disabled', false);
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+
+<!--============================================================================
+quickcheckout/shipping address
+=============================================================================-->
+
+  <!-- Show only Japan in shipping address countries -->
+  <file path="catalog/controller/quickcheckout/guest_shipping.php">
+    <operation>
+      <search><![CDATA[$data['countries'] = $this->model_localisation_country->getCountries();]]></search>
+      <add position="replace"><![CDATA[$data['countries'] = array($this->model_localisation_country->getCountry(107));]]></add>
+    </operation>
+  </file>
+  <file path="catalog/controller/quickcheckout/shipping_address.php">
+    <operation>
+      <search><![CDATA[$data['countries'] = $this->model_localisation_country->getCountries();]]></search>
+      <add position="replace"><![CDATA[$data['countries'] = array($this->model_localisation_country->getCountry(107));]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['addresses'] = $this->model_account_address->getAddresses();]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_cart_checkout
+      foreach ($data['addresses'] as $index => $address) {
+        if ($address['country_id'] != 107) {
+          unset($data['addresses'][$index]);
+        }
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+
+<!--============================================================================
+quickcheckout/shipping method
+=============================================================================-->
+
+  <!-- Add date/time components to catalog shipping method -->
+  <file path="admin/model/sale/order.php">
+    <operation>
+      <search trim="true"><![CDATA['shipping_code'           => $order_query->row['shipping_code'],]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_cart_checkout
+      'delivery_preference'                => $order_query->row['delivery_preference'],
+      'delivery_telephone'                 => $order_query->row['delivery_telephone'],
+      'shipping_date'                      => $order_query->row['shipping_date'] ? date($this->language->get('date_format_short'), strtotime($order_query->row['shipping_date'])) : '',
+      'shipping_dow'                       => $order_query->row['shipping_date'] ? date('l', strtotime($order_query->row['shipping_date'])) : '',
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/model/checkout/order.php">
+    <operation>
+      <search index="0"><![CDATA[comment = '" . $this->db->escape($data['comment']) . "', ]]></search>
+      <add position="replace"><![CDATA[comment = '" . $this->db->escape($data['comment']) . "', delivery_preference = '" . $this->db->escape($data['delivery_preference']) . "', delivery_telephone = '" . $this->db->escape($data['delivery_telephone']) . "', ]]></add>
+    </operation>
+    <operation>
+      <search trim="true"><![CDATA['shipping_code'           => $order_query->row['shipping_code'],]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_cart_checkout
+      'delivery_preference'                => $order_query->row['delivery_preference'],
+      'delivery_telephone'                 => $order_query->row['delivery_telephone'],
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/quickcheckout/confirm.php">
+    <!-- add delivery phone to controller -->
+    <operation>
+      <search><![CDATA[if (!isset($this->session->data['shipping_method'])) {]]></search>
+      <add position="after" offset="2"><![CDATA[
+      // yym_catalog_cart_checkout
+      if (!isset($this->session->data['delivery_telephone'])) {
+        $redirect = $this->url->link('checkout/checkout', '', 'SSL');
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[if (!isset($this->session->data['delivery_time'])) {]]></search>
+      <add position="after" offset="2"><![CDATA[
+      // yym_catalog_cart_checkout
+      if (!isset($this->session->data['delivery_telephone'])) {
+        $this->session->data['delivery_telephone'] = '';
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[if ($this->session->data['delivery_date'] != '') {]]></search>
+      <add position="replace" offset="6"><![CDATA[
+      // yym_catalog_cart_checkout
+      $nopref = array('No preference', '指定なし', '');
+
+      $order_data['delivery_preference'] = $this->session->data['delivery_date'];
+
+      if (!in_array($this->session->data['delivery_date'], $nopref) || !in_array($this->session->data['delivery_time'], $nopref)) {
+        $order_data['delivery_preference'] .= ', ' . $this->session->data['delivery_time'];
+      }
+
+      $order_data['delivery_telephone'] = $this->session->data['delivery_telephone'];
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$this->session->data['comment'] .= $this->language->get('text_order_comment') . ' ' . $this->session->data['order_comment'];]]></search>
+      <add position="replace"><![CDATA[
+      // yym_catalog_cart_checkout
+      $this->session->data['comment'] .= $this->session->data['order_comment'];
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$this->session->data['comment'] .= "\n\n" . $this->language->get('text_survey') . ' ' . $this->session->data['survey'];]]></search>
+      <add position="replace"><![CDATA[
+      // yym_catalog_cart_checkout
+      $this->session->data['comment'] .= ($this->session->data['comment'] == '' ? '\n\n' : '') . $this->session->data['survey'];
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/view/theme/stowear/template/quickcheckout/shipping_method.tpl">
+    <operation>
+      <search index="0"><![CDATA[//--></script>]]></search>
+      <add position="after"><![CDATA[
+      <?php /* yym_catalog_cart_checkout */ ?>
+      <script src="/catalog/view/javascript/moment.min.js"></script>
+      <script src="/catalog/view/javascript/moment-timezone.min.js"></script>
+      <script src="/catalog/view/javascript/yoyo-quick-checkout.js"></script>
+      <script type="text/javascript"><!--
+      $(document).ready(function() {
+        initShipping(<?php echo $shipping_zone; ?>, '<?php echo $locale; ?>', '<?php echo $datetime; ?>');
+      });
+      //--></script>
+      ]]></add>
+    </operation>
+    <!-- settimeout check if zone_id is set and reload shipping -->
+    <operation>
+      <search><![CDATA[<?php if ($error_warning) { ?>]]></search>
+      <add position="after"><![CDATA[
+      <script type="text/javascript"><!--
+      $(document).ready(function() {
+        var recheck = window.setTimeout(function() {
+          if ($('#payment-address input[name="shipping_address"]').length) {
+            if ($('#payment-address input[name="shipping_address"]:checked').length && $('#payment-address select[name="zone_id"] :selected').val() != '') {
+              reloadShippingMethod('payment');
+            } else if ($('#shipping-address select[name="zone_id"] :selected').length && $('#shipping-address select[name="zone_id"] :selected').val() != '') {
+              reloadShippingMethod('shipping');
+            }
+          } else if ($('#shipping-address input[name="shipping_address"]').length) {
+            if ($('#shipping-address input[name="shipping_address"]:checked').val() && $('#shipping-address select[name="zone_id"] :selected').val() != '') {
+              reloadShippingMethod('shipping');
+            }
+          }
+        }, 2000);
+      });
+      //--></script>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<input type="text" name="delivery_date" value="<?php echo $delivery_date; ?>" class="form-control date" data-date-format="DD-MM-YYYY" />]]></search>
+      <add position="replace"><![CDATA[<input type="text" name="delivery_date" value="<?php echo $delivery_date; ?>" class="form-control date" style="margin-bottom: 10px;" data-date-format="DD-MM-YYYY" readonly />]]></add>
+    </operation>
+    <!--
+    <operation>
+      <search><![CDATA[disabledDates: [<?php echo $delivery_unavailable; ?>],]]></search>
+      <add position="before"><![CDATA[
+      // yym_catalog_cart_checkout
+      locale: '<?php echo $locale; ?>',
+      ]]></add>
+    </operation>
+    -->
+  </file>
+
+  <file path="catalog/controller/quickcheckout/shipping_method.php">
+    <!-- add delivery telephone -->
+    <operation>
+      <search><![CDATA[$data['language_id'] = $this->config->get('config_language_id');]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_cart_checkout
+      $data['text_delivery_telephone'] = $this->language->get('text_delivery_telephone');
+      if (isset($this->session->data['delivery_telephone'])) {
+        $data['delivery_telephone'] = $this->session->data['delivery_telephone'];
+      } elseif ($this->customer->isLogged()) {
+        $data['delivery_telephone'] = $this->customer->getTelephone();
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['logged'] = $this->customer->isLogged();]]></search>
+      <add position="before" offset="1"><![CDATA[
+      // yym_catalog_cart_checkout
+      if (isset($this->request->post['delivery_telephone'])) {
+        $data['delivery_telephone'] = $this->request->post['delivery_telephone'];
+      } elseif (isset($this->session->data['delivery_telephone'])) {
+        $data['delivery_telephone'] = $this->session->data['delivery_telephone'];
+      } else {
+        $data['delivery_telephone'] = '';
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[if (isset($this->request->post['shipping_method'])]]></search>
+      <add position="before"><![CDATA[
+      // yym_catalog_cart_checkout
+      if (isset($this->request->post['delivery_telephone'])) {
+        $this->session->data['delivery_telephone'] = strip_tags($this->request->post['delivery_telephone']);
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="2"><![CDATA[if (isset($this->request->post['delivery_time'])) {]]></search>
+      <add position="after" offset="4"><![CDATA[
+      // yym_catalog_cart_checkout
+      $this->session->data['delivery_telephone'] = strip_tags($this->request->post['delivery_telephone']);
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[if ($this->config->get('quickcheckout_delivery_required')) {]]></search>
+      <add position="before"><![CDATA[
+      // yym_catalog_cart_checkout
+      if (empty($this->request->post['delivery_telephone'])) {
+        $json['error']['warning'] = $this->language->get('error_delivery_telephone');
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['logged'] = $this->customer->isLogged();]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_cart_checkout
+      $data['shipping_zone'] = (isset($shipping_address['zone_id']) && $shipping_address['zone_id'] != '') ? $shipping_address['zone_id'] : 1660;
+      $data['locale'] = $this->language->get('code');
+      date_default_timezone_set('Asia/Tokyo');
+      $data['datetime'] = date('Y-m-d\TH:i:sO');
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- Add moment.js locales when not english -->
+  <file path="catalog/controller/quickcheckout/checkout.php">
+    <operation>
+      <search><![CDATA[$this->document->addScript('catalog/view/javascript/jquery/datetimepicker/moment.js');]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_cart_checkout
+      if ($this->language->get('code') != 'en') {
+        $this->document->addScript('catalog/view/javascript/jquery/datetimepicker/locale/' . $this->language->get('code') . '.js');
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- Modify shipping method table structure -->
+  <file path="catalog/view/theme/stowear/template/quickcheckout/shipping_method.tpl">
+    <operation>
+      <search index="1"><![CDATA[</td>]]></search>
+      <add position="replace"><![CDATA[]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<td><label for="<?php echo $quote['code']; ?>"><?php echo $quote['title']; ?></label></td>]]></search>
+      <add position="replace" offset="1"><![CDATA[
+      <?php /* yym_catalog_cart_checkout */ ?>
+      <label for="<?php echo $quote['code']; ?>"><?php echo $quote['title']; ?></label>
+      <span class="pull-right"><?php echo $quote['text']; ?></span></td>
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="1"><![CDATA[<script type="text/javascript">]]></search>
+      <add position="before"><![CDATA[
+      <div class="required">
+        <label class="control-label"><strong><?php echo $text_delivery_telephone; ?></strong></label>
+        <input type="text" name="delivery_telephone" value="<?php echo $delivery_telephone; ?>" class="form-control" />
+      </div>
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- CHECKOUT: Add custom Yoyo shipping logic to free/weight shipping method -->
+  <file path="catalog/model/shipping/free.php">
+    <operation>
+      <search><![CDATA[if ($this->cart->getSubTotal() < $this->config->get('free_total')) {]]></search>
+      <add position="replace" offset="2"><![CDATA[
+        // yym_catalog_cart_checkout
+        $this->load->model('shipping/oversize');
+
+        $shipping_data = $this->model_shipping_oversize->getShippingData($this->cart->getProducts());
+        if ($shipping_data['has_standard_items'] && $shipping_data['subtotal'] >= $this->config->get('free_total')) {
+          $status = true;
+        } else {
+          $status = false;
+        }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/model/shipping/weight.php">
+    <operation>
+      <search><![CDATA[$this->load->language('shipping/weight');]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_cart_checkout
+      $status = false;
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[if ($query->num_rows) {]]></search>
+      <add position="replace" offset="1"><![CDATA[
+      // yym_catalog_cart_checkout
+      if ($query->num_rows) {
+        $this->load->model('shipping/oversize');
+        $shipping_data = $this->model_shipping_oversize->getShippingData($this->cart->getProducts());
+        if (($this->config->get('free_status') == 1) && ($shipping_data['has_standard_items']) && ($shipping_data['subtotal'] < $this->config->get('free_total'))) {
+          $status = true;
+        }
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- Add multilingual to weight -->
+  <file path="catalog/model/shipping/weight.php">
+    <operation>
+      <search><![CDATA[if ((string)$cost != '') {]]></search>
+      <add position="before"><![CDATA[
+      // yym_catalog_cart_checkout
+      if ($result['name'] == 'Okinawa Shipping') {
+        $name = $this->language->get('text_okinawa_shipping');
+      } else {
+        $name = $this->language->get('text_standard_shipping');
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['title'        => $result['name'] . '  (' . $this->language->get('text_weight') . ' ' . $this->weight->format($weight, $this->config->get('config_weight_class_id')) . ')',]]></search>
+      <add position="replace"><![CDATA[
+      // yym_catalog_cart_checkout
+      'title'        => $name . '  (' . $this->weight->format($weight, $this->config->get('config_weight_class_id')) . ')',
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+<!--============================================================================
+quickcheckout/payment method
+=============================================================================-->
+
+  <!-- Modify payment method table structure -->
+  <!-- Moved payment method images to image/payments/*.png -->
+  <!-- Added @2x for hdpi images -->
+  <file path="catalog/view/theme/stowear/template/quickcheckout/payment_method.tpl">
+    <operation>
+      <search><![CDATA[<?php } ?></td>]]></search>
+      <add position="replace"><![CDATA[<?php } ?>]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<td><label for="<?php echo $payment_method['code']; ?>"><?php echo $payment_method['title']; ?></label></td>]]></search>
+      <add position="replace" offset="5"><![CDATA[
+      <?php /* yym_catalog_cart_checkout */ ?>
+        <label for="<?php echo $payment_method['code']; ?>"><?php echo $payment_method['title']; ?></label>
+        <?php if (($payment_logo) && file_exists(DIR_IMAGE . 'catalog/payments/' . $payment_method['code'] . '.png')) { ?>
+        <span class="pull-right"><img src="<?php echo HTTPS_SERVER . 'image/catalog/payments/' . $payment_method['code'] . '.png'; ?>" srcset="<?php echo HTTPS_SERVER . 'image/catalog/payments/' . $payment_method['code'] . '.png'; ?> 1x, <?php echo HTTPS_SERVER . 'image/catalog/payments/' . $payment_method['code'] . '@2x.png'; ?> 2x" alt="<?php echo $payment_method['title']; ?>" style="vertical-align: middle;" /></span>
+        <?php } ?>
+      </td>
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- Customize COD strings -->
+  <file path="catalog/model/payment/cod.php">
+    <operation>
+      <search><![CDATA[$title=$title.'('.$this->formatCurrency($cost_and_tax).')';]]></search>
+      <add position="replace"><![CDATA[]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$title=$title.'('.$this->language->get('text_without_taxes').' '.$this->formatCurrency($cost).')';]]></search>
+      <add position="replace"><![CDATA[]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$title=$title.'('.$this->language->get('text_free').')';]]></search>
+      <add position="replace"><![CDATA[
+      // yym_catalog_cart_checkout
+      $title=$title.' - '.$this->language->get('text_free');
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+<!--============================================================================
+quickcheckout/cart
+=============================================================================-->
+
+  <!-- Fix coupon rounding error -->
+  <file path="catalog/model/total/coupon.php">
+    <operation>
+      <search><![CDATA[$discount = $product['total'] / 100 * $coupon_info['discount'];]]></search>
+      <add position="replace"><![CDATA[
+      // yym_catalog_cart_checkout
+      $discount = floor($product['total'] / 100 * $coupon_info['discount']);
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- Remove remove product button -->
+  <file path="catalog/view/theme/stowear/template/quickcheckout/cart.tpl">
+    <operation>
+      <search><![CDATA[<button data-toggle="tooltip" title="<?php echo $button_remove; ?>" class="btn btn-primary button-remove" data-remove="<?php echo $product['key']; ?>"><i class="fa fa-times"></i><?php /* yym */ ?></button>]]></search>
+      <add position="replace"><![CDATA[]]></add>
+    </operation>
+  </file>
+
+
+
+<!--============================================================================
+quickcheckout/confirm
+=============================================================================-->
+
+  <!-- Add product option image to confirm template adapted from ocexstensions_product_option_image -->
+  <file path="catalog/view/theme/stowear/template/quickcheckout/confirm.tpl">
+    <operation>
+      <search><![CDATA[<td class="text-left"><a href="<?php echo $product['href']; ?>"><?php echo $product['name']; ?></a>]]></search>
+      <add position="before"><![CDATA[
+      <td class="text-center">
+        <?php foreach ($product['option'] as $option) {
+          if ($option['oimage']) $product['thumb'] = $option['oimage'];
+        } ?>
+        <?php if ($product['thumb']) { ?>
+        <a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" /></a>
+        <?php } ?>
+      </td>
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- Add billing/shipping/payment/delivery to controller -->
+  <file path="catalog/controller/quickcheckout/confirm.php">
+    <operation>
+      <search><![CDATA[$data['text_recurring_item'] = $this->language->get('text_recurring_item');]]></search>
+      <add position="before"><![CDATA[
+      // yym_catalog_cart_checkout
+      $data['text_checkout_payment_address'] = $this->language->get('text_checkout_payment_address');
+      $data['text_checkout_shipping_address'] = $this->language->get('text_checkout_shipping_address');
+      $data['text_checkout_payment_delivery'] = $this->language->get('text_checkout_payment_delivery');
+      $data['text_checkout_payment_method'] = $this->language->get('text_checkout_payment_method');
+      $data['text_checkout_shipping_method'] = $this->language->get('text_checkout_shipping_method');
+      $data['text_checkout_delivery_preference'] = $this->language->get('text_checkout_delivery_preference');
+      $data['text_checkout_delivery_telephone'] = $this->language->get('text_checkout_delivery_telephone');
+
+      $data['payment_address'] = $payment_address;
+      $data['shipping_address'] = $shipping_address;
+      $data['payment_method'] = $order_data['payment_method'];
+      $data['shipping_method'] = $order_data['shipping_method'];
+      $nopref = array('No preference', '指定なし', '');
+      $data['delivery_preference'] = $order_data['delivery_preference'];
+      $data['delivery_telephone'] = $order_data['delivery_telephone'];
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$order_data['products'] = array();]]></search>
+      <add position="before"><![CDATA[
+      // yym_catalog_cart_checkout
+      if ($order_data['payment_address_format']) {
+        $format = $order_data['payment_address_format'];
+      } else {
+        $format = '{firstname} {lastname}' . "\n" . '{company}' . "\n" . '{address_1}' . "\n" . '{address_2}' . "\n" . '{city} {postcode}' . "\n" . '{zone}' . "\n" . '{country}';
+      }
+
+      $find = array(
+        '{firstname}',
+        '{lastname}',
+        '{company}',
+        '{address_1}',
+        '{address_2}',
+        '{city}',
+        '{postcode}',
+        '{zone}',
+        '{zone_code}',
+        '{country}'
+      );
+
+      $replace = array(
+        'firstname' => $order_data['payment_firstname'],
+        'lastname'  => $order_data['payment_lastname'],
+        'company'   => $order_data['payment_company'],
+        'address_1' => $order_data['payment_address_1'],
+        'address_2' => $order_data['payment_address_2'],
+        'city'      => $order_data['payment_city'],
+        'postcode'  => $order_data['payment_postcode'],
+        'zone'      => $order_data['payment_zone'],
+        'zone_code' => $order_data['payment_zone_id'],
+        'country'   => $order_data['payment_country']
+      );
+
+      $payment_address = str_replace(array("\r\n", "\r", "\n"), '<br />', preg_replace(array("/\s\s+/", "/\r\r+/", "/\n\n+/"), '<br />', trim(str_replace($find, $replace, $format))));
+
+      $replace = array(
+        'firstname' => $order_data['shipping_firstname'],
+        'lastname'  => $order_data['shipping_lastname'],
+        'company'   => $order_data['shipping_company'],
+        'address_1' => $order_data['shipping_address_1'],
+        'address_2' => $order_data['shipping_address_2'],
+        'city'      => $order_data['shipping_city'],
+        'postcode'  => $order_data['shipping_postcode'],
+        'zone'      => $order_data['shipping_zone'],
+        'zone_code' => $order_data['shipping_zone_id'],
+        'country'   => $order_data['shipping_country']
+      );
+
+      $shipping_address = str_replace(array("\r\n", "\r", "\n"), '<br />', preg_replace(array("/\s\s+/", "/\r\r+/", "/\n\n+/"), '<br />', trim(str_replace($find, $replace, $format))));
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- Add get product images to controller -->
+  <file path="catalog/controller/quickcheckout/confirm.php">
+    <operation>
+      <search><![CDATA[$this->load->model('tool/upload');]]></search>
+      <add position="before"><![CDATA[
+      // yym_catalog_cart_checkout
+      $this->load->model('tool/image');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['column_name'] = $this->language->get('column_name');]]></search>
+      <add position="before"><![CDATA[
+      // yym_catalog_cart_checkout
+      $data['column_image'] = $this->language->get('column_image');
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="1"><![CDATA[$option_data = array();]]></search>
+      <add position="before"><![CDATA[
+      // yym_catalog_cart_checkout
+      if ($product['image']) {
+        $image = $this->model_tool_image->resize($product['image'], $this->config->get('config_image_cart_width'), $this->config->get('config_image_cart_height'));
+      } else {
+        $image = '';
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['products'][] = array(]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_cart_checkout
+      'thumb'     => $image,
+      ]]></add>
+    </operation>
+    <!-- Add product option image to catalog checkout confirm -->
+    <operation>
+      <search><![CDATA[$products = $this->cart->getProducts();]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_cart_checkout
+      $this->load->model('catalog/product');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$product_total = 0;]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_cart_checkout
+      $p_options = $this->model_catalog_product->getProductOptions($product['product_id']);
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="1"><![CDATA[$option_data[] = array]]></search>
+      <add position="before"><![CDATA[
+      // yym_catalog_cart_checkout
+      $oimage = '';
+      if ($option['type'] == 'select' || $option['type'] == 'radio' || $option['type'] == 'checkbox' || $option['type'] == 'image') {
+        foreach ($p_options as $pos) {
+          if (is_array($pos['product_option_value'])) {
+            foreach ($pos['product_option_value'] as $oname) {
+              if ($oname['name'] == $option['value']) $oimage = $oname['image'] ;
+              if ($oimage == 'no_image.jpg') $oimage = '';
+            }
+          }
+        }
+      }
+      $ximage = $this->model_tool_image->resize($oimage,$this->config->get('config_image_cart_width'), $this->config->get('config_image_cart_height'));
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="1"><![CDATA[$option_data[] = array(]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_cart_checkout
+      'oimage'=> $ximage,
+      ]]></add>
+    </operation>
+    <!-- Pass payment address into shipping address when no shipping is required -->
+    <operation>
+      <search><![CDATA[$order_data['shipping_firstname'] = '';]]></search>
+      <add position="replace" offset="14"><![CDATA[
+                // yym_catalog_cart_checkout
+				$order_data['shipping_firstname'] = $order_data['payment_firstname'];
+				$order_data['shipping_lastname'] = $order_data['payment_lastname'];
+				$order_data['shipping_company'] = $order_data['payment_company'];
+				$order_data['shipping_address_1'] = $order_data['payment_address_1'];
+				$order_data['shipping_address_2'] = $order_data['payment_address_2'];
+				$order_data['shipping_city'] = $order_data['payment_city'];
+				$order_data['shipping_postcode'] = $order_data['payment_postcode'];
+				$order_data['shipping_zone'] = $order_data['payment_zone'];
+				$order_data['shipping_zone_id'] = $order_data['payment_zone_id'];
+				$order_data['shipping_country'] = $order_data['payment_country'];
+				$order_data['shipping_country_id'] = $order_data['payment_country_id'];
+				$order_data['shipping_address_format'] = $order_data['payment_address_format'];
+				$order_data['shipping_custom_field'] = $order_data['payment_custom_field'];
+				$order_data['shipping_method'] = 'No Shipping';
+				$order_data['shipping_code'] = 'none.none';
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+<!--============================================================================
+checkout/success
+=============================================================================-->
+
+  <!-- Add order number to checkout/success page -->
+  <file path="catalog/controller/checkout/success.php">
+    <operation>
+      <search><![CDATA[if (isset($this->session->data['order_id'])) {]]></search>
+      <add position="before"><![CDATA[
+      // yym_catalog_cart_checkout
+      if (isset($this->session->data['order_id'])) {
+        $order_id = $this->session->data['order_id'];
+        $data['conversion'] = true;
+      } else {
+        $order_id = 0;
+        $data['conversion'] = false;
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="1"><![CDATA[if ($this->customer->isLogged()) {]]></search>
+      <add position="replace" offset="4"><![CDATA[
+      // yym_catalog_cart_checkout
+      if ($this->customer->isLogged()) {
+        $data['text_message'] = sprintf($this->language->get('text_customer'), $order_id, $this->url->link('account/account', '', 'SSL'), $this->url->link('account/order', '', 'SSL'), $this->url->link('information/contact'));
+      } else {
+        $data['text_message'] = sprintf($this->language->get('text_guest'), $order_id, $this->url->link('information/contact'));
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+</modification>

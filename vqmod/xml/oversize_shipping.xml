@@ -1,0 +1,360 @@
+<modification>
+  <id>Oversize Shipping</id>
+  <version>3.0.0</version>
+  <vqmver>2.1</vqmver>
+  <author>Felix Hsieh</author>
+
+  <file name="catalog/model/shipping/weight.php">
+    <operation error="skip" info="Replace orginal getWeight() function to substract oversize shipping weight.">
+      <search position="replace" regex="true"><![CDATA[~(.+?)\$this->cart->getWeight\(\)(.+?)~]]></search>
+      <add><![CDATA[
+      // oversize_shipping
+      $this->load->model('shipping/oversize');
+      $oversize_shipping_weight = $this->model_shipping_oversize->getOversizeShippingTotalWeight();
+      $1($this->cart->getWeight() - $oversize_shipping_weight)$2
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="admin/model/catalog/product.php">
+    <operation error="log" info="getProduct()">
+      <search position="replace"><![CDATA[$query = $this->db->query("SELECT DISTINCT *, (SELECT keyword FROM " . DB_PREFIX . "url_alias WHERE query = 'product_id=" . (int)$product_id . "') AS keyword FROM " . DB_PREFIX . "product p LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) WHERE p.product_id = '" . (int)$product_id . "' AND pd.language_id = '" . (int)$this->config->get('config_language_id') . "'");]]></search>
+      <add><![CDATA[
+      // oversize_shipping
+      $oversize_shipping_enabled = false;
+      if($this->config->get('oversize_status')){
+        $oversize_shipping_enabled = true;
+      }
+
+      $sql = "SELECT DISTINCT *, (SELECT keyword FROM " . DB_PREFIX . "url_alias WHERE query = 'product_id=" . (int)$product_id . "') AS keyword" . ($oversize_shipping_enabled ? (" ,(SELECT oversize_shipping FROM " .DB_PREFIX . "oversize_shipping WHERE product_id = '" .(int)$product_id."') AS oversize_shipping") : "") . " FROM " . DB_PREFIX . "product p LEFT JOIN " . DB_PREFIX . "product_description pd ON (p.product_id = pd.product_id) WHERE p.product_id = '" . (int)$product_id . "' AND pd.language_id = '" . (int)$this->config->get('config_language_id') . "'";
+      $query = $this->db->query($sql);
+      ]]></add>
+    </operation>
+
+    <operation error="log" info="editProduct()">
+      <search position="after"><![CDATA[public function editProduct($product_id, $data) {]]></search>
+      <add><![CDATA[
+      // oversize_shipping
+      if($this->config->get('oversize_status')){
+        $this->db->query("INSERT INTO " . DB_PREFIX . "oversize_shipping (product_id, oversize_shipping) VALUES (" . (int)$product_id . ", " . $this->db->escape($data['oversize_shipping']) . ") ON DUPLICATE KEY UPDATE oversize_shipping = " . $this->db->escape($data['oversize_shipping']));
+      }
+      ]]></add>
+    </operation>
+
+    <operation error="log" info="addProduct()">
+      <search position="after"><![CDATA[$product_id = $this->db->getLastId();]]></search>
+      <add><![CDATA[
+      // oversize_shipping
+      if($this->config->get('oversize_status') && $data['oversize_shipping'] == 1){
+        $this->db->query("INSERT INTO " . DB_PREFIX . "oversize_shipping SET product_id = '" . (int)$product_id . "', oversize_shipping = " . $this->db->escape($data['oversize_shipping']));
+      }
+      ]]></add>
+    </operation>
+
+    <operation error="log" info="deleteProduct()">
+      <search position="after"><![CDATA[$this->event->trigger('pre.admin.product.delete', $product_id);]]></search>
+      <add><![CDATA[
+      // oversize_shipping
+      if($this->config->get('oversize_status')){
+        $this->db->query("DELETE FROM " . DB_PREFIX . "oversize_shipping WHERE product_id = '" . (int)$product_id . "'");
+      }
+     ]]></add>
+    </operation>
+
+    <operation error="log" info="copyProduct(), default oversize shipping as false">
+      <search position="after"><![CDATA[$data['status'] = '0';]]></search>
+      <add><![CDATA[
+      // oversize_shipping
+      $data['oversize_shipping'] = '0';
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="admin/controller/catalog/product.php">
+    <operation error="log" info="Check if oversize shipping method is enabled, save to $this->data['oversize_status'] (required by tpl).">
+      <search position="after"><![CDATA[protected function getForm() {]]></search>
+      <add><![CDATA[
+      // oversize_shipping
+      $data['oversize_status'] = 0;
+      if($this->config->get('oversize_status')){
+        $data['oversize_status'] = $this->config->get('oversize_status');
+      }
+      ]]></add>
+    </operation>
+
+    <operation error="log" info="Pass $oversize_shipping value to tpl.">
+      <search position="before"><![CDATA[if (isset($this->request->post['model'])) {]]></search>
+      <add><![CDATA[
+      // oversize_shipping
+      if($this->config->get('oversize_status')){
+        $data['oversize_shipping'] = 0;
+        if (isset($this->request->post['oversize_shipping'])) {
+          $data['oversize_shipping'] = $this->request->post['oversize_shipping'];
+        } elseif (!empty($product_info)) {
+          $data['oversize_shipping'] = $product_info['oversize_shipping'];
+        } else {
+          $data['oversize_shipping'] = 0;
+        }
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="admin/view/template/catalog/product_form.tpl">
+    <operation error="log" info="Check if oversize shipping method is enabled. If yes, add oversize shipping option to the table (after Requires Shipping)">
+      <search position="before" offset="1"><![CDATA[<label class="col-sm-2 control-label" for="input-keyword">]]></search>
+      <add><![CDATA[
+      <?php if($oversize_status == 1) { ?>
+        <div class="form-group">
+          <label class="col-sm-2 control-label"><strong>Oversize Shipping:</strong></label>
+          <div class="col-sm-10">
+            <label class="radio-inline">
+              <input type="radio" name="oversize_shipping" value="1" <?php if ($oversize_shipping == 1) { echo 'checked="checked"'; } ?> />
+              <?php echo $text_yes; ?>
+            </label>
+            <label class="radio-inline">
+              <input type="radio" name="oversize_shipping" value="0" <?php if ($oversize_shipping == 0) { echo 'checked="checked"'; } ?> />
+              <?php echo $text_no; ?>
+            </label>
+          </div>
+        </div>
+      <?php }?>
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Show label on product page
+  <file name="catalog/controller/product/product.php">
+    <operation error="log" info="Check if oversize shipping method is enabled, save to $this->data['is_oversize_shipping'] (required by tpl).">
+      <search position="before"><![CDATA[$data['text_select'] = $this->language->get('text_select');]]></search>
+      <add><![CDATA[
+      $data['is_oversize_shipping'] = false;
+      if($this->config->get('oversize_status')){
+        $oversize_text_label_keys = $this->config->get('oversize_text_label');
+        $data['oversize_text_label'] = $oversize_text_label_keys[$this->config->get('config_language_id')]['label'];
+        $this->load->model('shipping/oversize');
+        $data['is_oversize_shipping'] = $this->model_shipping_oversize->isOversize($product_id); //return true or false;
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file name="catalog/view/theme/stowear/template/product/product.tpl">
+    <operation error="log" info="Check if oversize shipping available. If yes, show on product page.">
+      <search position="replace" regex="true"><![CDATA[~<h2><\?php echo \$(price|special); \?></h2>~]]></search>
+      <add><![CDATA[<h2><?php echo $$1; ?><?php echo $is_oversize_shipping ? "<small> &amp; " . $oversize_text_label . "</small>" : "";?></h2>]]></add>
+    </operation>
+  </file>
+  -->
+
+  <!-- Show label on featured, best seller, special, latest pages
+  <file path="catalog/controller/module/" name="featured.php">
+    <operation error="log" info="Load oversize shipping model">
+      <search position="before"><![CDATA[$data['heading_title'] = $this->language->get('heading_title');]]></search>
+      <add><![CDATA[
+      $data['is_oversize_shipping'] = false;
+      if($this->config->get('oversize_status')){
+        $oversize_text_label_keys = $this->config->get('oversize_text_label');
+        $data['oversize_text_label'] = $oversize_text_label_keys[$this->config->get('config_language_id')]['label'];
+        $this->load->model('shipping/oversize');
+      }
+      ]]></add>
+    </operation>
+    <operation error="log" info="Check if oversize shipping">
+      <search position="replace"><![CDATA[$data['products'][] = array(]]></search>
+      <add><![CDATA[
+      $is_oversize_shipping = false;
+      if($this->config->get('oversize_status')){
+        $is_oversize_shipping = $this->model_shipping_oversize->isOversize($product_info['product_id']);
+      }
+      $data['products'][] = array(
+        'is_oversize_shipping' 	 => $is_oversize_shipping,
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/module/" name="bestseller.php,special.php,latest.php">
+    <operation error="log" info="Load oversize shipping model">
+      <search position="before"><![CDATA[$data['heading_title'] = $this->language->get('heading_title');]]></search>
+      <add><![CDATA[
+      $data['is_oversize_shipping'] = false;
+      if($this->config->get('oversize_status')){
+        $oversize_text_label_keys = $this->config->get('oversize_text_label');
+        $data['oversize_text_label'] = $oversize_text_label_keys[$this->config->get('config_language_id')]['label'];
+        $this->load->model('shipping/oversize');
+      }
+      ]]></add>
+    </operation>
+    <operation error="log" info="Check if oversize shipping">
+      <search position="replace"><![CDATA[$data['products'][] = array(]]></search>
+      <add><![CDATA[
+        $is_oversize_shipping = false;
+        if($this->config->get('oversize_status')){
+          $is_oversize_shipping = $this->model_shipping_oversize->isOversize($result['product_id']);
+        }
+        $data['products'][] = array(
+          'is_oversize_shipping' 	 => $is_oversize_shipping,
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/view/theme/*/template/module/" name="featured.tpl,bestseller.tpl,special.tpl,latest.tpl">
+    <operation error="log" info="Check if oversize shipping available. If yes, show on featured module.">
+      <search position="replace"><![CDATA[<div class="image"><a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-responsive" /></a></div>]]></search>
+      <add><![CDATA[
+      <div class="image" style="position:relative">
+        <?php if($product['is_oversize_shipping']) { ?>
+        <span class="oversize_shipping_label"><?php echo $oversize_text_label ?></span>
+        <?php } ?>
+        <a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" class="img-responsive" /></a>
+      </div>
+      ]]></add>
+    </operation>
+  </file>
+  -->
+
+  <!-- Show label on category, search, manufacturer pages
+  <file path="catalog/controller/product/" name="category.php,search.php,manufacturer.php">
+    <operation error="log" info="Load oversize shipping model">
+        <search position="after"><![CDATA[$this->load->model('tool/image')]]></search>
+        <add><![CDATA[
+        $data['is_oversize_shipping'] = false;
+        if($this->config->get('oversize_status')){
+          $oversize_text_label_keys = $this->config->get('oversize_text_label');
+          $data['oversize_text_label'] = $oversize_text_label_keys[$this->config->get('config_language_id')]['label'];
+          $this->load->model('shipping/oversize');
+        }
+        ]]></add>
+    </operation>
+    <operation error="log" info="Check if oversize shipping">
+      <search position="replace"><![CDATA[$data['products'][] = array(]]></search>
+      <add><![CDATA[
+      $is_oversize_shipping = false;
+      if($this->config->get('oversize_status')){
+        $is_oversize_shipping = $this->model_shipping_oversize->isOversize($result['product_id']);
+      }
+      $data['products'][] = array(
+        'is_oversize_shipping' 	 => $is_oversize_shipping,
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/view/theme/*/template/product/" name="category.tpl,search.tpl,manufacturer_info.tpl">
+    <operation error="log" info="Check if oversize shipping available. If yes, show on listing pages.">
+      <search position="replace"><![CDATA[<div class="image"><a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" title="<?php echo $product['name']; ?>" class="img-responsive" /></a></div>]]></search>
+      <add><![CDATA[
+      <div class="image" style="position:relative">
+        <?php if($product['is_oversize_shipping']) { ?>
+        <span class="oversize_shipping_label"><?php echo $oversize_text_label ?></span>
+        <?php } ?>
+        <a href="<?php echo $product['href']; ?>"><img src="<?php echo $product['thumb']; ?>" alt="<?php echo $product['name']; ?>" class="img-responsive" /></a>
+      </div>
+      ]]></add>
+    </operation>
+  </file>
+  -->
+
+  <!-- Deprecated
+  <file name="catalog/controller/checkout/shipping.php">
+    <operation error="log" info="Hide other shipping methods when oversize shipping on selected items is available.">
+      <search position="replace"><![CDATA[$this->session->data['shipping_methods'] = $quote_data;]]></search>
+      <add><![CDATA[
+      // oversize_shipping
+      $all_product_oversize_shipping = true;
+      if(isset($quote_data['oversize_shipping'])){
+        $product_list = $this->cart->getProducts();
+        if(count($product_list) > 0){
+          $this->load->model('shipping/oversize');
+          foreach($product_list as $product){
+            $product_id = $product['product_id'];
+            $is_oversize_shipping = $this->model_shipping_oversize->isOversize($product_id);
+            if($is_oversize_shipping == false){
+              $all_product_oversize_shipping = false;
+            }
+          }
+        }
+
+        if($all_product_oversize_shipping && isset($quote_data['oversize_shipping'])){
+          $only_oversize_shipping_quote_data = $quote_data['oversize_shipping'];
+          $only_oversize_shipping_quote_data['quote']['oversize_shipping']['title'] = substr($only_oversize_shipping_quote_data['quote']['oversize_shipping']['title'],0, strpos($only_oversize_shipping_quote_data['quote']['oversize_shipping']['title'], '-') - 1);
+          unset($quote_data);
+          $quote_data = array();
+          $quote_data['oversize_shipping'] = $only_oversize_shipping_quote_data;
+        }
+      }
+      $this->session->data['shipping_methods'] = $quote_data;
+      ]]></add>
+    </operation>
+  </file>
+  -->
+
+  <file name="catalog/controller/quickcheckout/shipping_method.php">
+    <operation error="log" info="Hide other shipping methods when oversize shipping on selected items is available.">
+      <search position="before"><![CDATA[$this->session->data['shipping_methods'] = $method_data;]]></search>
+      <add><![CDATA[
+      // oversize_shipping
+      if(isset($method_data['oversize_shipping'])) {
+        $oversize_only = true;
+        $products = $this->cart->getProducts();
+        if(isset($products)){
+          $this->load->model('shipping/oversize');
+          foreach($products as $product){
+            if(!$this->model_shipping_oversize->isOversize($product['product_id'])){
+              $oversize_only = false;
+              break;
+            }
+          }
+        }
+
+        if($oversize_only) {
+          $oversize_shipping_data = $method_data['oversize_shipping'];
+          //$oversize_shipping_data['quote']['oversize_shipping']['title'] = substr($oversize_shipping_data['quote']['oversize_shipping']['title'],0, strpos($oversize_shipping_data['quote']['oversize_shipping']['title'], '()') - 1);
+          unset($method_data);
+          $method_data = array();
+          $method_data['oversize_shipping'] = $oversize_shipping_data;
+        }
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- deprecated
+  <file name="catalog/view/theme/stowear/template/module/shipping.tpl">
+    <operation error="log" info="Hide radiobox for oversize shipping option">
+      <search position="replace" offset="4"><![CDATA[if (json['shipping_method'][i]['quote'][j]['code'] == '<?php echo $shipping_method; ?>') {]]></search>
+      <add><![CDATA[
+      // oversize_shipping
+      if(json['shipping_method'][i]['quote'][j]['code'] != 'oversize.oversize' || Object.keys(json['shipping_method']).length == 1){
+        //if (json['shipping_method'][i]['quote'][j]['code'] == '<?php echo $shipping_method; ?>') {
+          html += '<td><input type="radio" name="shipping_method" value="' + json['shipping_method'][i]['quote'][j]['code'] + '" id="' + json['shipping_method'][i]['quote'][j]['code'] + '" checked="checked" /></td>';
+        //} else {
+        //  html += '<td><input type="radio" name="shipping_method" value="' + json['shipping_method'][i]['quote'][j]['code'] + '" id="' + json['shipping_method'][i]['quote'][j]['code'] + '" /></td>';
+        //}
+      }
+      else {
+        html += '<td></td>';
+      }
+      ]]></add>
+    </operation>
+  </file>
+  -->
+
+  <file name="catalog/view/theme/stowear/template/quickcheckout/shipping_method.tpl">
+    <operation error="log" info="Hide radiobox for oversize shipping option">
+      <search position="replace" offset="6"><![CDATA[<?php if ($quote['code'] == $code || !$code || !$exists) { ?>]]></search>
+      <add><![CDATA[
+      <?php if($quote['code'] != 'oversize.oversize' || count($shipping_methods) == 1) { ?>
+        <?php if ($quote['code'] == $code || !$code) { ?>
+          <?php $code = $quote['code']; ?>
+          <input type="radio" name="shipping_method" value="<?php echo $quote['code']; ?>" id="<?php echo $quote['code']; ?>" checked="checked" />
+        <?php } else { ?>
+          <input type="radio" name="shipping_method" value="<?php echo $quote['code']; ?>" id="<?php echo $quote['code']; ?>" checked="checked" />
+        <?php } ?>
+      <?php } ?>
+      ]]></add>
+    </operation>
+  </file>
+
+</modification>

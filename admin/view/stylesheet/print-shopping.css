@@ -1,0 +1,9 @@
+@media print {
+  @page {
+    margin: 30mm 5mm 20mm 5mm !important;
+  }
+}
+
+.print-header {
+/*  margin-top: -20mm !important;*/
+}

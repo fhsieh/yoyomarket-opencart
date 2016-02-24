@@ -1,0 +1,452 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <name>Add Product Image Attributes</name>
+  <code>dmonco_image_attributes</code>
+  <version>1.0</version>
+  <author>Dmonco</author>
+  <link>http://www.appslabstudio.com</link>
+
+  <!-- Add to admin menu -->
+  <file path="admin/view/template/common/menu.tpl">
+    <operation>
+      <search><![CDATA[<li><a href="<?php echo $attribute_group; ?>"><?php echo $text_attribute_group; ?></a></li>]]></search>
+      <add position="after"><![CDATA[
+      <?php /* dmonco_image_attributes */ ?>
+      <li><a href="<?php echo $attribute_image; ?>"><?php echo $text_attribute_image; ?></a></li>
+      <li><a href="<?php echo $attribute_image_group; ?>"><?php echo $text_attribute_image_group; ?></a></li>
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/controller/common/menu.php">
+    <operation>
+      <search><![CDATA[$this->language->get('text_attribute_group')]]></search>
+      <add position="after"><![CDATA[
+      // dmonco_image_attributes
+      $data['text_attribute_image'] = $this->language->get('text_attribute_image');
+      $data['text_attribute_image_group'] = $this->language->get('text_attribute_image_group');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['backup']]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      $data['attribute_image'] = $this->url->link('catalog/attribute_image', 'token=' . $this->session->data['token'], 'SSL');
+      $data['attribute_image_group'] = $this->url->link('catalog/attribute_image_group', 'token=' . $this->session->data['token'], 'SSL');
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Add to admin product info page -->
+  <file path="admin/controller/catalog/product.php">
+    <operation>
+      <search><![CDATA[protected function getForm()]]></search>
+      <add position="after"><![CDATA[
+      // dmonco_image_attributes
+      if (isset($this->request->server['HTTPS']) && (($this->request->server['HTTPS'] == 'on') || ($this->request->server['HTTPS'] == '1'))) {
+       $data['base'] = $this->config->get('config_ssl');
+      } else {
+       $data['base'] = $this->config->get('config_url');
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['tab_option']]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      $data['tab_img_attribute'] = $this->language->get('tab_img_attribute');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[// Options]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      $this->load->model('catalog/attribute_image');
+
+      if (isset($this->request->post['product_img_attribute'])) {
+        $product_img_attributes = $this->request->post['product_img_attribute'];
+      } elseif (isset($this->request->get['product_id'])) {
+        $product_img_attributes = $this->model_catalog_product->getProductAttributeImages($this->request->get['product_id']);
+      } else {
+        $product_img_attributes = array();
+      }
+
+      $this->load->model('tool/image');
+      $data['product_img_attributes'] = array();
+
+      foreach ($product_img_attributes as $product_img_attribute) {
+        $attribute_info = $this->model_catalog_attribute_image->getAttributeImage($product_img_attribute['attribute_image_id']);
+        if ($attribute_info) {
+          $data['product_img_attributes'][] = array(
+            'attribute_image_id'            => $product_img_attribute['attribute_image_id'],
+            /*'image'                         => $this->model_tool_image->resize($attribute_info['added_image'], $this->config->get('config_attribute_image_width'), $this->config->get('config_attribute_image_height')),*/
+            'imageoriginal'					=> '/image/'.$attribute_info['added_image'],
+            'name'							=> $attribute_info['name']
+          );
+        }
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['entry_option']]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      $data['root'] = str_ireplace("/admin/","",HTTP_SERVER);
+      $data['entry_img_attribute'] = $this->language->get('entry_img_attribute');
+      $data['entry_img_image'] = $this->language->get('entry_img_image');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['tab_option']]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      $data['tab_img_attribute'] = $this->language->get('tab_img_attribute');
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/model/catalog/product.php">
+    <operation>
+      <search index="0"><![CDATA[if (isset($data['product_option']))]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      if (isset($data['product_img_attribute'])) {
+        foreach ($data['product_img_attribute'] as $product_attribute) {
+          if ($product_attribute['attribute_image_id']) {
+            $this->db->query("DELETE FROM " . DB_PREFIX . "product_attribute_image WHERE product_id = '" . (int)$product_id . "' AND attribute_image_id = '" . (int)$product_attribute['attribute_image_id'] . "'");
+            $this->db->query("INSERT INTO " . DB_PREFIX . "product_attribute_image SET product_id = '" . (int)$product_id . "', attribute_image_id = '" . (int)$product_attribute['attribute_image_id'] . "'");
+          }
+        }
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="1"><![CDATA[if (isset($data['product_option']))]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      $this->db->query("DELETE FROM " . DB_PREFIX . "product_attribute_image WHERE product_id = '" . (int)$product_id . "'");
+      if (!empty($data['product_img_attribute'])) {
+        foreach ($data['product_img_attribute'] as $product_attribute) {
+          if ($product_attribute['attribute_image_id']) {
+            $this->db->query("DELETE FROM " . DB_PREFIX . "product_attribute_image WHERE product_id = '" . (int)$product_id . "' AND attribute_image_id = '" . (int)$product_attribute['attribute_image_id'] . "'");
+            $this->db->query("INSERT INTO " . DB_PREFIX . "product_attribute_image SET product_id = '" . (int)$product_id . "', attribute_image_id = '" . (int)$product_attribute['attribute_image_id'] . "'");
+          }
+        }
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['product_description'] = $this->getProductDescriptions($product_id);]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      $data['product_img_attribute'] = $this->getProductAttributeImges($product_id);
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[public function getProductAttributes($product_id) {]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      public function getProductAttributeImges($product_id) {
+        $query = $this->db->query("SELECT attribute_image_id FROM " . DB_PREFIX . "product_attribute_image WHERE product_id = '" . (int)$product_id . "' GROUP BY attribute_image_id");
+
+        return $query->rows;
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$this->event->trigger('pre.admin.product.delete', $product_id);]]></search>
+      <add position="after" offset="1"><![CDATA[
+      // dmonco_image_attributes
+      $this->db->query("DELETE FROM " . DB_PREFIX . "product_attribute_image WHERE product_id = '" . (int)$product_id . "'");
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[public function getProductOptions($product_id)]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      public function getProductAttributeImages($product_id) {
+        $product_attribute_data = array();
+        $product_attribute_query = $this->db->query("SELECT * FROM " . DB_PREFIX . "product_attribute_image WHERE product_id = '" . (int)$product_id . "'");
+        foreach($product_attribute_query->rows as $image_attribute){
+          $product_attribute_data[] = $image_attribute;
+        }
+        return $product_attribute_data;
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/view/template/catalog/product_form.tpl">
+    <operation>
+      <search><![CDATA[<li><a href="#tab-option"]]></search>
+      <add position="before"><![CDATA[
+      <?php /* dmonco_image_attributes */ ?>
+      <li><a href="#tab-attribute-img" data-toggle="tab"><?php echo $tab_img_attribute; ?></a></li>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<div class="tab-pane" id="tab-option">]]></search>
+      <add position="before"><![CDATA[
+      <?php /* dmonco_image_attributes */ ?>
+      <div class="tab-pane" id="tab-attribute-img">
+        <div class="table-responsive">
+          <table id="attribute-img" class="table table-striped table-bordered table-hover">
+            <thead>
+              <tr>
+                <td class="text-left"><?php echo $entry_attribute; ?></td>
+                <td class="text-left"><?php echo $entry_text; ?></td>
+                <td></td>
+              </tr>
+            </thead>
+            <tbody>
+              <?php $attribute_img_row = 0; ?>
+              <?php foreach ($product_img_attributes as $product_img_attribute) { ?>
+              <tr id="attribute-img-row<?php echo $attribute_img_row; ?>">
+                <td class="text-left"><input type="text" name="product_img_attribute[<?php echo $attribute_img_row; ?>][name]" value="<?php echo $product_img_attribute['name']; ?>" placeholder="<?php echo $entry_attribute; ?>" class="form-control" />
+                  <input type="hidden" name="product_img_attribute[<?php echo $attribute_img_row; ?>][attribute_image_id]" value="<?php echo $product_img_attribute['attribute_image_id']; ?>" /></td>
+                <td class="text-left"><img id="attribute-image-image" width="100" height="100" src="<?php echo $data['root'] . $product_img_attribute['imageoriginal']; ?>"></td>
+                <td class="text-left"><button type="button" onclick="$('#attribute-img-row<?php echo $attribute_img_row; ?>').remove();" data-toggle="tooltip" title="<?php echo $button_remove; ?>" class="btn btn-danger"><i class="fa fa-minus-circle"></i></button></td>
+              </tr>
+              <?php $attribute_img_row++; ?>
+              <?php } ?>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2"></td>
+                <td class="text-left"><button type="button" onclick="addAttributeImg();" data-toggle="tooltip" title="<?php echo $button_attribute_add; ?>" class="btn btn-primary"><i class="fa fa-plus-circle"></i></button></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<?php echo $footer; ?>]]></search>
+      <add position="before"><![CDATA[
+      <?php /* dmonco_image_attributes */ ?>
+      <script type="text/javascript"><!--
+      var attribute_img_row = <?php echo $attribute_img_row; ?>;
+
+      function addAttributeImg() {
+        html  = '<tr id="attribute-img-row' + attribute_img_row + '">';
+        html += '  <td class="text-left"><input type="text" name="product_img_attribute[' + attribute_img_row + '][name]" value="" placeholder="<?php echo $entry_attribute; ?>" class="form-control" /><input type="hidden" name="product_img_attribute[' + attribute_img_row + '][attribute_image_id]" value="" /></td>';
+        html += '  <td class="text-left">';
+        html += '  <img name="product_img_attribute[' + attribute_img_row + '][image]" width="100<?php //echo $this->config->get("config_attribute_image_width"); ?>" height="100<?php //echo $this->config->get("config_attribute_image_height"); ?>" src=""></td>';
+        html += '  </td>';
+        html += '  <td class="text-left"><button type="button" onclick="$(\'#attribute-img-row' + attribute_img_row + '\').remove();" data-toggle="tooltip" title="<?php echo $button_remove; ?>" class="btn btn-danger"><i class="fa fa-minus-circle"></i></button></td>';
+        html += '</tr>';
+        $('#attribute-img tbody').append(html);
+        attributeimgautocomplete(attribute_img_row);
+        attribute_img_row++;
+      }
+
+      function attributeimgautocomplete(attribute_img_row) {
+        $('input[name=\'product_img_attribute[' + attribute_img_row + '][name]\']').autocomplete({
+          'source': function(request, response) {
+            $.ajax({
+              url: 'index.php?route=catalog/attribute_image/autocomplete&token=<?php echo $token; ?>&filter_name=' +  encodeURIComponent(request),
+              dataType: 'json',
+              success: function(json) {
+                response($.map(json, function(item) {
+                  return {
+                    category: item.attribute_image_group,
+                    label: item.name,
+                    value: item.attribute_image_id,
+                    image: item.image
+                  }
+                }));
+              }
+            });
+          },
+          'select': function(item) {
+            $('input[name=\'product_img_attribute[' + attribute_img_row + '][name]\']').val(item['label']);
+            $('input[name=\'product_img_attribute[' + attribute_img_row + '][attribute_image_id]\']').val(item['value']);
+            $('img[name=\'product_img_attribute[' + attribute_img_row + '][image]\']').attr('src', "<?php echo HTTP_CATALOG; ?>/image/"+item['image']);
+          }
+        });
+      }
+
+      $('#attribute-img tbody tr').each(function(index, element) {
+        attributeimgautocomplete(index);
+      });
+      //--></script>
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Add to admin settings -->
+  <file path="admin/controller/setting/setting.php">
+    <operation>
+      <search><![CDATA[$data['entry_ftp_hostname']]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      $data['entry_attribute_image'] = $this->language->get('entry_attribute_image');
+      $data['text_attribute_image_css'] = $this->language->get('text_attribute_image_css');
+      $data['entry_attribute_image_css'] = $this->language->get('entry_attribute_image_css');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[if (isset($this->error['error_filename']))]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      if (isset($this->error['attribute_image'])) {
+        $data['error_attribute_image'] = $this->error['attribute_image'];
+      } else {
+        $data['error_attribute_image'] = '';
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[if (isset($this->request->post['config_ftp_hostname']))]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      if (isset($this->request->post['config_attribute_image_width'])) {
+        $data['config_attribute_image_width'] = $this->request->post['config_attribute_image_width'];
+      } else {
+        $data['config_attribute_image_width'] = $this->config->get('config_attribute_image_width');
+      }
+
+      if (isset($this->request->post['config_attribute_image_height'])) {
+        $data['config_attribute_image_height'] = $this->request->post['config_attribute_image_height'];
+      } else {
+        $data['config_attribute_image_height'] = $this->config->get('config_attribute_image_height');
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[if ($this->request->post['config_ftp_status'])]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      if (!$this->request->post['config_attribute_image_width'] || !$this->request->post['config_attribute_image_height']) {
+        $this->error['attribute_image'] = $this->language->get('error_attribute_image');
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[if (isset($this->request->post['config_google_analytics']))]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      if (isset($this->request->post['config_attribute_image_css'])) {
+        $data['config_attribute_image_css'] = $this->request->post['config_attribute_image_css'];
+      } else {
+        $data['config_attribute_image_css'] = $this->config->get('config_attribute_image_css');
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/view/template/setting/setting.tpl">
+    <operation>
+      <search><![CDATA[<div class="tab-pane" id="tab-ftp">]]></search>
+      <add position="before" offset="1"><![CDATA[
+      <?php /* dmonco_image_attributes */ ?>
+      <div class="form-group required">
+        <label class="col-sm-2 control-label" for="input-attribute_image"><?php echo $entry_attribute_image; ?></label>
+        <div class="col-sm-10">
+          <div class="row">
+            <div class="col-sm-6">
+              <input type="text" name="config_attribute_image_width" value="<?php echo $config_attribute_image_width; ?>" placeholder="<?php echo $entry_width; ?>" id="input-image-location" class="form-control" />
+            </div>
+            <div class="col-sm-6">
+              <input type="text" name="config_attribute_image_height" value="<?php echo $config_attribute_image_height; ?>" placeholder="<?php echo $entry_height; ?>" class="form-control" />
+            </div>
+          </div>
+          <?php if ($error_attribute_image) { ?>
+          <div class="text-danger"><?php echo $error_attribute_image; ?></div>
+          <?php } ?>
+        </div>
+      </div>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<option value="<?php echo $return_status['return_status_id']; ?>"><?php echo $return_status['name']; ?></option>]]></search>
+      <add position="after" offset="6"><![CDATA[
+      <?php /* dmonco_image_attributes */ ?>
+      <fieldset>
+        <legend><?php echo $text_attribute_image_css; ?></legend>
+        <div class="form-group">
+          <label class="col-sm-2 control-label" for="input-attribute-image-css"><span data-toggle="tooltip" title="" data-original-title="CSS for image attributes"><?php echo $entry_attribute_image_css; ?></span></label>
+          <div class="col-sm-10">
+          <textarea name="config_attribute_image_css" cols="40" rows="5"><?php echo $config_attribute_image_css; ?></textarea>
+          </div>
+        </div>
+      </fieldset>
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Add to catalog product page -->
+  <file path="catalog/model/catalog/product.php">
+    <operation>
+      <search><![CDATA[public function getProductOptions($product_id)]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      public function getProductImageAttributes($product_id) {
+        $product_attribute_image_group_data = array();
+        $product_attribute_image_group_query = $this->db->query("SELECT aig.attribute_image_group_id, aigd.name FROM " . DB_PREFIX . "product_attribute_image pai LEFT JOIN " . DB_PREFIX . "attribute_image ai ON (pai.attribute_image_id = ai.attribute_image_id) LEFT JOIN " . DB_PREFIX . "attribute_image_group aig ON (ai.attribute_image_group_id = aig.attribute_image_group_id) LEFT JOIN " . DB_PREFIX . "attribute_image_group_description aigd ON (aig.attribute_image_group_id = aigd.attribute_image_group_id) WHERE pai.product_id = '" . (int)$product_id . "' AND aigd.language_id = '" . (int)$this->config->get('config_language_id') . "' GROUP BY aig.attribute_image_group_id ORDER BY aig.sort_order, aigd.name");
+
+        foreach ($product_attribute_image_group_query->rows as $product_attribute_image_group) {
+          $product_attribute_image_data = array();
+          $product_attribute_image_query = $this->db->query("SELECT ai.attribute_image_id, ai.added_image, aid.name FROM " . DB_PREFIX . "product_attribute_image pai LEFT JOIN " . DB_PREFIX . "attribute_image ai ON (pai.attribute_image_id = ai.attribute_image_id) LEFT JOIN " . DB_PREFIX . "attribute_image_description aid ON (ai.attribute_image_id = aid.attribute_image_id) WHERE pai.product_id = '" . (int)$product_id . "' AND ai.attribute_image_group_id = '" . (int)$product_attribute_image_group['attribute_image_group_id'] . "' AND aid.language_id = '" . (int)$this->config->get('config_language_id') . "' ORDER BY ai.sort_order, aid.name");
+
+          foreach ($product_attribute_image_query->rows as $product_attribute_image) {
+            $product_attribute_image_data[] = array(
+              'attribute_image_id' => $product_attribute_image['attribute_image_id'],
+              'name'               => $product_attribute_image['name'],
+              'added_image'        => 'image/' . $product_attribute_image['added_image']
+              // 'added_image'        => $this->model_tool_image->resize($product_attribute_image['added_image'], $this->config->get('config_attribute_image_width'), $this->config->get('config_attribute_image_height'))
+            );
+          }
+
+          $product_attribute_image_group_data[] = array(
+            'attribute_image_group_id' => $product_attribute_image_group['attribute_image_group_id'],
+            'name'                     => $product_attribute_image_group['name'],
+            'attribute_image'          => $product_attribute_image_data
+          );
+        }
+
+        return $product_attribute_image_group_data;
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/product/product.php">
+    <operation>
+      <search><![CDATA[$data['products'] = array();]]></search>
+      <add position="before"><![CDATA[
+      // dmonco_image_attributes
+      $data['attribute_image_groups'] = $this->model_catalog_product->getProductImageAttributes($this->request->get['product_id']);
+      $data['config_attribute_image_css'] = html_entity_decode($this->config->get('config_attribute_image_css'), ENT_QUOTES, 'UTF-8');
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- added @2x for hdpi images -->
+  <file path="catalog/view/theme/stowear/template/product/product.tpl">
+    <operation>
+      <search><![CDATA[<span><?php echo $text_stock; ?></span> <?php echo $stock; ?></div>]]></search>
+      <add position="replace"><![CDATA[
+        <span><?php echo $text_stock; ?></span> <?php echo $stock; ?><br />
+        <?php /* dmonco_image_attributes */ ?>
+        <style type="text/css"><?php echo $data['config_attribute_image_css']; ?></style>
+        <div class="image_attributes">
+          <?php foreach ($attribute_image_groups as $attribute_image_group) { ?>
+            <?php foreach ($attribute_image_group['attribute_image'] as $attribute_image) { ?>
+              <img src="<?php echo $attribute_image['added_image']; ?>" srcset="<?php echo $attribute_image['added_image']; ?> 1x, <?php echo str_replace('.png', '@2x.png', $attribute_image['added_image']); ?> 2x" alt="<?php echo $attribute_image['name']; ?>" /><?php echo $attribute_image['name']; ?><br />
+            <?php } ?>
+          <?php } ?>
+        </div>
+      </div>
+      ]]></add>
+    </operation>
+  </file>
+
+</modification>

@@ -1,0 +1,22 @@
+.quickcheckoutleft {
+	width: 100%;
+}
+.quickcheckoutright {
+	width: 100%;
+}
+.quickcheckoutmid {
+	width: 100%;
+}
+#quickcheckoutconfirm .col-sm-6 {
+	width: 100% !important;
+}
+#cart1 {
+	padding-top: 0px;
+}
+table.quickcheckout-cart {
+	overflow: auto;
+}
+.quickcheckout-cart td.image img {
+	width: 30px;
+	height: auto;
+}

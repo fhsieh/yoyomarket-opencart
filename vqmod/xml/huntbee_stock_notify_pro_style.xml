@@ -1,0 +1,175 @@
+<modification>
+  <id>HUNTBEE STOCK NOTIFY (STYLE) PRO OC2.X</id>
+  <version>2.0</version>
+  <vqmver>2.X</vqmver>
+  <author>HUNTBEE.COM | WEBGURUINDIA</author>
+
+  <file name="catalog/controller/product/product.php">
+    <operation>
+      <search position="after"><![CDATA[$data['button_cart'] = $this->language->get('button_cart');]]></search>
+      <add><![CDATA[
+      // huntbee_out_of_stock_notify
+      $data['notify_button'] = $this->language->get('button_notify_button');
+      $quantity = $data['quantity'] = $product_info['quantity'];
+
+      $query = $this->db->query("SELECT stock_status_id FROM " . DB_PREFIX . "stock_status WHERE name = '".$product_info['stock_status']."'");
+      $stock_status_id = $data['stock_status_id'] = $query->row['stock_status_id'];
+
+      if ($hb_oosn_stock_status == '0') {
+        $stock_status_id = 0;
+      }
+
+      if (($quantity < $hb_oosn_product_qty) and ($stock_status_id == $hb_oosn_stock_status)){
+        $data['hb_oosn_enable'] = true;
+      } else {
+        $data['hb_oosn_enable'] = false;
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- yym_custom: mod for stowear -->
+  <file name="catalog/view/theme/stowear/template/product/product.tpl">
+    <operation>
+      <search position="replace"><![CDATA[<input type="button" value="<?php echo $button_cart; ?>" id="button-cart" rel="<?php echo $product_id; ?>" data-loading-text="<?php echo $text_loading; ?>" class="button" />]]></search>
+      <add><![CDATA[
+      <?php if ($hb_oosn_enable) { ?>
+      <input type="button" value="<?php echo $notify_button; ?>" id="button-cart" rel="<?php echo $product_id; ?>" data-loading-text="<?php echo $text_loading; ?>" class="button" />
+      <?php } else { ?>
+      <input type="button" value="<?php echo $button_cart; ?>" id="button-cart" rel="<?php echo $product_id; ?>" data-loading-text="<?php echo $text_loading; ?>" class="button" />
+      <?php } ?>
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="before"><![CDATA[<p><?php echo $entry_qty; ?></p>]]></search>
+      <add><![CDATA[
+      <?php if (!$hb_oosn_enable) { ?>
+      ]]></add>
+    </operation>
+    <operation>
+      <search position="before"><![CDATA[<input type="hidden" name="product_id" size="2" value="<?php echo $product_id; ?>" />]]></search>
+      <add><![CDATA[
+      <?php } ?>
+      ]]></add>
+    </operation>
+    <!--
+    <operation error="skip">
+      <search position="replace"><![CDATA[<span class="hidden-xs hidden-sm hidden-md"><?php echo $button_cart; ?></span> <i class="fa fa-bell"></i>]]></search>
+      <add><![CDATA[
+      <?php if ($product['notify_enable']){ ?>
+      <span class="hidden-xs hidden-sm hidden-md"><?php echo $notify_button; ?></span> <i class="fa fa-shopping-cart"></i>
+      <?php } else { ?>
+      <span class="hidden-xs hidden-sm hidden-md"><?php echo $button_cart; ?></span> <i class="fa fa-shopping-cart"></i>
+      <?php } ?>
+      ]]></add>
+    </operation>
+    -->
+  </file>
+
+  <!--PRODUCT LAYOUT-->
+  <file name="catalog/model/catalog/product.php">
+    <operation error="log">
+      <search position="after"><![CDATA[$query->row['quantity'],]]></search>
+      <add><![CDATA[
+      // huntbee_out_of_stock_notify
+      'stock_status_id'         => $query->row['stock_status_id'],
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/product/" name="product.php,category.php,manufacturer.php,search.php,special.php">
+    <operation error="skip">
+      <search position="after"><![CDATA[$data['text_model'] = $this->language->get('text_model');]]></search>
+      <add><![CDATA[
+      // huntbee_out_of_stock_notify
+      $this->language->load('module/hb_oosnm');
+      $hb_oosn_stock_status = $this->config->get('hb_oosn_stock_status');
+      $hb_oosn_product_qty = $this->config->get('hb_oosn_product_qty');
+      ]]></add>
+    </operation>
+    <operation error="skip">
+      <search position="after"><![CDATA[$result['product_id'],]]></search>
+      <add><![CDATA[
+      // huntbee_out_of_stock_notify
+      'quantity'    => $result['quantity'],
+      'stockstatusid' => $result['stock_status_id'],
+      'button_cart' => (($result['quantity'] < $hb_oosn_product_qty) && (($result['stock_status_id'] == $hb_oosn_stock_status) or ($hb_oosn_stock_status == 0)))? $this->language->get('button_notify_button'):$this->language->get('button_cart'),
+      'notify_enable' => (($result['quantity'] < $hb_oosn_product_qty) && (($result['stock_status_id'] == $hb_oosn_stock_status) or ($hb_oosn_stock_status == 0)))? true:false,
+      ]]></add>
+    </operation>
+  </file>
+
+  <!--
+  <file path="catalog/controller/product/" name="compare.php">
+    <operation error="skip">
+      <search position="after"><![CDATA[$product_info['product_id'],]]></search>
+      <add><![CDATA[
+      'quantity'  => $product_info['quantity'],
+      'stockstatusid'  => $product_info['stock_status_id'],
+      'button_cart'	=> (($product_info['quantity'] < $hb_oosn_product_qty) && (($product_info['stock_status_id'] == $hb_oosn_stock_status) or ($hb_oosn_stock_status == 0)))? $this->language->get('button_notify_button'):$this->language->get('button_cart'),
+      'notify_enable'	=> (($product_info['quantity'] < $hb_oosn_product_qty) && (($product_info['stock_status_id'] == $hb_oosn_stock_status) or ($hb_oosn_stock_status == 0)))? true:false,
+      ]]></add>
+    </operation>
+  </file>
+  -->
+
+  <!--MODULES LAYOUT-->
+  <file path="catalog/view/theme/stowear/template/product/" name="category.tpl,manufacturer_info.tpl,search.tpl,special.tpl">
+    <operation error="skip">
+      <search position="replace"><![CDATA[<?php echo $button_cart; ?>]]></search>
+      <add><![CDATA[<?php echo $product['button_cart']; ?>]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/module/" name="featured.php">
+    <operation error="skip">
+      <search position="after"><![CDATA[$data['button_cart'] = $this->language->get('button_cart');]]></search>
+      <add><![CDATA[
+      // huntbee_out_of_stock_notify
+      $this->load->language('module/hb_oosnm');
+      $hb_oosn_stock_status = $this->config->get('hb_oosn_stock_status');
+      $hb_oosn_product_qty = $this->config->get('hb_oosn_product_qty');
+      ]]></add>
+    </operation>
+    <operation error="skip">
+      <search position="after"><![CDATA[$product_info['product_id'],]]></search>
+      <add><![CDATA[
+      // huntbee_out_of_stock_notify
+      'quantity'    => $product_info['quantity'],
+      'stockstatusid' => $product_info['stock_status_id'],
+      'button_cart' => (($product_info['quantity'] < $hb_oosn_product_qty) && (($product_info['stock_status_id'] == $hb_oosn_stock_status) or ($hb_oosn_stock_status == 0)))? $this->language->get('button_notify_button'):$this->language->get('button_cart'),
+      'notify_enable' => (($product_info['quantity'] < $hb_oosn_product_qty) && (($product_info['stock_status_id'] == $hb_oosn_stock_status) or ($hb_oosn_stock_status == 0)))? true:false,
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/module/" name="latest.php,bestseller.php,special.php">
+    <operation error="skip">
+      <search position="after"><![CDATA[$data['button_cart'] = $this->language->get('button_cart');]]></search>
+      <add><![CDATA[
+      // huntbee_out_of_stock_notify
+      $this->load->language('module/hb_oosnm');
+      $hb_oosn_stock_status = $this->config->get('hb_oosn_stock_status');
+      $hb_oosn_product_qty = $this->config->get('hb_oosn_product_qty');
+      ]]></add>
+    </operation>
+    <operation error="skip">
+      <search position="after"><![CDATA[$result['product_id'],]]></search>
+      <add><![CDATA[
+      // huntbee_out_of_stock_notify
+      'quantity'    => $result['quantity'],
+      'stockstatusid' => $result['stock_status_id'],
+      'button_cart' => (($result['quantity'] < $hb_oosn_product_qty) && (($result['stock_status_id'] == $hb_oosn_stock_status) or ($hb_oosn_stock_status == 0)))? $this->language->get('button_notify_button'):$this->language->get('button_cart'),
+      'notify_enable' => (($result['quantity'] < $hb_oosn_product_qty) && (($result['stock_status_id'] == $hb_oosn_stock_status) or ($hb_oosn_stock_status == 0)))? true:false,
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/view/theme/stowear/template/new_elements/" name="product.tpl">
+    <operation error="skip">
+      <search position="replace"><![CDATA[<?php echo $button_cart; ?>]]></search>
+      <add><![CDATA[<?php echo $product['button_cart']; ?>]]></add>
+    </operation>
+  </file>
+
+</modification>

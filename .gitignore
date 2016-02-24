@@ -1,0 +1,29 @@
+# Cache files
+/system/cache/*
+/system/logs/*.log
+/image/cache/**/*
+/image/catalog
+/image/catalog/*
+/system/modification/**/*.php
+/system/modification/**/*.tpl
+/vqmod/*.cache
+/vqmod/logs/*
+/vqmod/vqcache/*.php
+/vqmod/vqcache/*.tpl
+
+# Production files
+php.ini
+
+# Development files
+.htaccess
+/node_modules/**/*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+desktop.ini
+ehthumbs.db
+Thumbs.db

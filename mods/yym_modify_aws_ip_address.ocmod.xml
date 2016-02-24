@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <name>Pass External IP Address from AWS</name>
+  <code>yym_aws_ip_address</code>
+  <version>1.0</version>
+  <author>Felix Hsieh</author>
+  <link>http://www.yoyomarket.jp</link>
+
+  <!-- Inline REMOTE_ADDR replacements -->
+  <file path="admin/controller/common/forgotten.php">
+    <operation>
+      <search><![CDATA[$this->request->server['REMOTE_ADDR']]]></search>
+      <add position="replace"><![CDATA[(!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $this->request->server['REMOTE_ADDR'])]]></add>
+    </operation>
+  </file>
+
+  <file path="system/library/customer.php">
+    <operation>
+      <search><![CDATA[$this->request->server['REMOTE_ADDR']]]></search>
+      <add position="replace"><![CDATA[(!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $this->request->server['REMOTE_ADDR'])]]></add>
+    </operation>
+  </file>
+
+  <file path="system/library/user.php">
+    <operation>
+      <search><![CDATA[$this->request->server['REMOTE_ADDR']]]></search>
+      <add position="replace"><![CDATA[(!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $this->request->server['REMOTE_ADDR'])]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/model/account/activity.php">
+    <operation>
+      <search><![CDATA[$this->request->server['REMOTE_ADDR']]]></search>
+      <add position="replace"><![CDATA[(!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $this->request->server['REMOTE_ADDR'])]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/model/account/customer.php">
+    <operation>
+      <search><![CDATA[$this->request->server['REMOTE_ADDR']]]></search>
+      <add position="replace"><![CDATA[(!empty($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $this->request->server['REMOTE_ADDR'])]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- These are added into db as column forwarded_ip
+  catalog/controller/api/order.php
+  catalog/controller/checkout/confirm.php
+  catalog/controller/quickcheckout/confirm.php
+  -->
+
+
+
+  <!-- Rewrite Customers Online IP address check -->
+  <file path="catalog/controller/common/footer.php">
+    <operation>
+      <search><![CDATA[if (isset($this->request->server['REMOTE_ADDR'])) {]]></search>
+      <add position="replace" offset="4"><![CDATA[
+      if (!empty($this->request->server['HTTP_X_FORWARDED_FOR'])) {
+          $ip = $this->request->server['HTTP_X_FORWARDED_FOR'];
+      } elseif (!empty($this->request->server['HTTP_CLIENT_IP'])) {
+          $ip = $this->request->server['HTTP_CLIENT_IP'];
+      } elseif (isset($this->request->server['REMOTE_ADDR'])) {
+          $ip = $this->request->server['REMOTE_ADDR'];
+      } else {
+          $ip = '';
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+</modification>

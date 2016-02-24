@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <name>Modify Admin Order List / Form</name>
+  <code>yym_admin_order</code>
+  <version>1.0</version>
+  <author>Felix Hsieh</author>
+  <link>http://www.yoyomarket.jp</link>
+
+  <file path="admin/view/template/sale/order_list.tpl">
+    <!-- Hide default filter well -->
+    <operation>
+      <search><![CDATA[<div class="well">]]></search>
+      <add position="before"><![CDATA[<?php /* yym_admin_order]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<form method="post"]]></search>
+      <add position="before"><![CDATA[*/ ?>]]></add>
+    </operation>
+    <!-- Table styles -->
+    <operation>
+      <search><![CDATA[<div class="table-responsive">]]></search>
+      <add position="replace"><![CDATA[<div class="table-responsive" style="overflow: visible;">]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<table class="table table-bordered table-hover">]]></search>
+      <add position="replace"><![CDATA[<table class="table table-bordered table-hover table-striped table-condensed">]]></add>
+    </operation>
+    <!-- Header row -->
+    <operation>
+      <search><![CDATA[<td class="text-right"><?php if ($sort == 'o.order_id') { ?>]]></search>
+      <add position="replace"><![CDATA[<td class="text-left"><?php if ($sort == 'o.order_id') { ?>]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<td class="text-left"><?php if ($sort == 'status') { ?>]]></search>
+      <add position="before"><![CDATA[
+                  <td class="text-left"><?php if ($sort == 'o.date_added') { ?>
+                    <a href="<?php echo $sort_date_added; ?>" class="<?php echo strtolower($order); ?>"><?php echo $column_date_added; ?></a>
+                    <?php } else { ?>
+                    <a href="<?php echo $sort_date_added; ?>"><?php echo $column_date_added; ?></a>
+                    <?php } ?></td>
+                  <td class="text-right"><?php if ($sort == 'o.total') { ?>
+                    <a href="<?php echo $sort_total; ?>" class="<?php echo strtolower($order); ?>"><?php echo $column_total; ?></a>
+                    <?php } else { ?>
+                    <a href="<?php echo $sort_total; ?>"><?php echo $column_total; ?></a>
+                    <?php } ?></td>
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="1"><![CDATA[<td class="text-right"><?php if ($sort == 'o.total') { ?>]]></search>
+      <add position="replace" offset="4"><![CDATA[]]></add>
+    </operation>
+    <operation>
+      <search index="1"><![CDATA[<td class="text-left"><?php if ($sort == 'o.date_added') { ?>]]></search>
+      <add position="replace" offset="4"><![CDATA[
+      <?php /* yym_admin_order */ ?>
+      <td class="text-left">
+        <?php if ($sort == 'o.shipping_method') { ?>
+        <a href="<?php echo $sort_shipping_method; ?>" class="<?php echo strtolower($order); ?>"><?php echo $column_shipping_method; ?></a>
+        <?php } else { ?>
+        <a href="<?php echo $sort_shipping_method; ?>"><?php echo $column_shipping_method; ?></a>
+        <?php } ?>
+      </td>
+      <td class="text-left">
+        <?php if ($sort == 'o.payment_method') { ?>
+        <a href="<?php echo $sort_payment_method; ?>" class="<?php echo strtolower($order); ?>"><?php echo $column_payment_method; ?></a>
+        <?php } else { ?>
+        <a href="<?php echo $sort_payment_method; ?>"><?php echo $column_payment_method; ?></a>
+        <?php } ?>
+      </td>
+      <td class="text-left"><?php echo $column_delivery_preference; ?></td>
+      <td class="text-left">
+        <?php if ($sort == 'o.shipping_date') { ?>
+        <a href="<?php echo $sort_shipping_date; ?>" class="<?php echo strtolower($order); ?>"><?php echo $column_shipping_date; ?></a>
+        <?php } else { ?>
+        <a href="<?php echo $sort_shipping_date; ?>"><?php echo $column_shipping_date; ?></a>
+        <?php } ?>
+      </td>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<td class="text-left"><?php if ($sort == 'o.date_modified') { ?>]]></search>
+      <add position="replace" offset="4"><![CDATA[]]></add>
+    </operation>
+    <!-- Filters row -->
+    <operation>
+      <search><![CDATA[<form method="post" enctype="multipart/form-data" target="_blank" id="form-order">]]></search>
+      <add position="replace"><![CDATA[<form method="post" enctype="multipart/form-data" target="_blank" id="form-order" class="form-horizontal">]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[</thead>]]></search>
+      <add position="before"><![CDATA[
+      <?php /* yym_admin_order */ ?>
+      <tr class="filters">
+        <td></td>
+        <td class="text-left">
+          <input type="text" name="filter_order_id" value="<?php echo $filter_order_id; ?>" id="input-order-id" class="form-control input-sm" />
+        </td>
+        <td class="text-left">
+          <input type="text" name="filter_customer" value="<?php echo $filter_customer; ?>" placeholder="(Autocomplete)" id="input-customer" class="form-control input-sm" />
+        </td>
+        <td class="text-left col-xs-1">
+          <div class="row">
+            <div class="col-xs-6" style="padding-right: 3px;">
+              <input type="text" name="filter_date_from" value="<?php echo $filter_date_from; ?>" data-date-format="YYYY-MM-DD" id="input-date-from" class="form-control input-sm date" />
+            </div>
+            <div class="col-xs-6" style="padding-left: 2px;">
+              <input type="text" name="filter_date_to" value="<?php echo $filter_date_to; ?>" data-date-format="YYYY-MM-DD" id="input-date-to" class="form-control input-sm date" />
+            </div>
+          </div>
+        </td>
+        <td class="text-right">
+          <input type="text" name="filter_total" value="<?php echo $filter_total; ?>" id="input-total" class="form-control input-sm" />
+        </td>
+        <td class="text-left">
+          <select name="filter_order_status" id="input-order-status" class="form-control input-sm" multiple="multiple">
+            <!--<option value="*"></option>-->
+            <option value="0">&lt;span style="color: #757575"&gt;<?php echo $text_missing; ?>&lt;/span&gt;</option>
+            <?php foreach ($order_statuses as $order_status) { ?>
+            <?php if (in_array($order_status['order_status_id'], explode(',', $filter_order_status))) { ?>
+            <option value="<?php echo $order_status['order_status_id']; ?>" selected="selected">&lt;span style="color: <?php echo $qosu_os[$order_status['order_status_id']]['color']; ?>"&gt;<?php echo $order_status['name']; ?>&lt;/span&gt;</option>
+            <?php } else { ?>
+            <option value="<?php echo $order_status['order_status_id']; ?>">&lt;span style="color: <?php echo $qosu_os[$order_status['order_status_id']]['color']; ?>"&gt;<?php echo $order_status['name']; ?>&lt;/span&gt;</option>
+            <?php } ?>
+            <?php } ?>
+          </select>
+        </td>
+        <td><input type="text" name="filter_shipping_method" value="<?php echo $filter_shipping_method; ?>" id="input-shipping-method" class="form-control input-sm" /></td>
+        <td><input type="text" name="filter_payment_method" value="<?php echo $filter_payment_method; ?>" id="input-payment-method" class="form-control input-sm" /></td>
+        <td><input type="text" name="filter_delivery_preference" value="<?php echo $filter_delivery_preference; ?>" id="input-delivery-preference" class="form-control input-sm" /></td>
+        <td class="text-left"><input type="text" name="filter_shipping_date" value="<?php echo $filter_shipping_date; ?>" data-date-format="YYYY-MM-DD" id="input-shipping-date" class="form-control input-sm date" /></td>
+        <td>
+          <div class="btn-group btn-group-flex">
+            <button type="button" id="button-filter" class="btn btn-sm btn-default" data-toggle="tooltip" data-container="body" title="" data-original-title="Filter"><i class="fa fa-filter fa-fw"></i></button>
+            <button type="button" id="button-clear" class="btn btn-sm btn-default" id="clear-filter" data-toggle="tooltip" data-container="body" title="" data-original-title="Clear filter"><i class="fa fa-times fa-fw"></i></button>
+          </div>
+        </td>
+      </tr>
+      ]]></add>
+    </operation>
+    <!-- Data rows -->
+    <operation>
+      <search><![CDATA[<td class="text-right"><?php echo $order['order_id']; ?></td>]]></search>
+      <add position="replace"><![CDATA[
+      <?php /* yym_admin_order */ ?>
+      <td class="text-left"><a href="<?php echo $order['view']; ?>"><?php echo $order['order_id']; ?></a></td>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<td class="text-left"><?php echo $order['customer']; ?></td>]]></search>
+      <add position="replace"><![CDATA[
+      <?php /* yym_admin_order */ ?>
+      <td class="text-left">
+        <?php if ($order['customer_id'] > 0) { ?>
+        <a href="<?php echo $order['link']; ?>"><?php echo $order['customer']; ?></a>
+        <?php } else { ?>
+        <?php echo $order['customer']; ?>
+        <?php } ?>
+      </td>
+      <td class="text-center"><?php echo $order['date_added']; ?></td>
+      <td class="text-right"><?php echo $order['total']; ?></td>
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="1"><![CDATA[<td class="text-right"><?php echo $order['total']; ?></td>]]></search>
+      <add position="replace"><![CDATA[
+      <?php /* yym_admin_order */ ?>
+      <td class="text-left"><?php echo $order['shipping_method']; ?></td>
+      <td class="text-left"><?php echo $order['payment_method']; ?></td>
+      <td class="text-left"><?php echo $order['delivery_preference']; ?></td>
+      <td class="text-left" id="order-<?php echo $order['order_id']; ?>-shipping_date" data-table="order" data-order-id="<?php echo $order['order_id']; ?>" data-id="shipping_date" data-value="<?php echo $order['shipping_date']; ?>">
+        <?php if (!empty($order['shipping_date'])) { ?>
+          <a role="button" data-toggle="popover" class="action-update btn btn-xs btn-<?php echo strtolower($order['shipping_dow']); ?>"><?php echo $order['shipping_dow']; ?></a>
+          <span class="pull-right"><?php echo $order['shipping_date']; ?></span>
+        <?php } else { ?>
+          <a class="action-update btn btn-xs btn-default">Set Date</a>
+        <?php } ?>
+      </td>
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<td class="text-left"><?php echo $order['date_added']; ?></td>]]></search>
+      <add position="replace"><![CDATA[]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<td class="text-left"><?php echo $order['date_modified']; ?></td>]]></search>
+      <add position="replace"><![CDATA[]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<td class="text-right"><a href="<?php echo $order['view']; ?>" data-toggle="tooltip" title="<?php echo $button_view; ?>" class="btn btn-info"><i class="fa fa-eye"></i></a> <a href="<?php echo $order['edit']; ?>" data-toggle="tooltip" title="<?php echo $button_edit; ?>" class="btn btn-primary"><i class="fa fa-pencil"></i></a> <a href="<?php echo $order['delete']; ?>" id="button-delete<?php echo $order['order_id']; ?>" data-toggle="tooltip" title="<?php echo $button_delete; ?>" class="btn btn-danger"><i class="fa fa-trash-o"></i></a></td>]]></search>
+      <add position="replace"><![CDATA[
+      <?php /* yym_admin_order */ ?>
+      <td class="text-right">
+        <div class="btn-group btn-group-flex">
+          <a href="<?php echo $order['view']; ?>" data-toggle="tooltip" title="<?php echo $button_view; ?>" class="btn btn-xs btn-primary"><i class="fa fa-eye"></i></a>
+          <a href="<?php echo $order['delete']; ?>" id="button-delete<?php echo $order['order_id']; ?>" data-toggle="tooltip" title="<?php echo $button_delete; ?>" class="btn btn-xs btn-danger"><i class="fa fa-trash-o"></i></a>
+        </div>
+      </td>
+      ]]></add>
+    </operation>
+    <!-- Full row click select and multi-select -->
+    <operation>
+      <search index="3"><![CDATA[<script type="text/javascript">]]></search>
+      <add position="before"><![CDATA[
+      <?php /* yym_admin_order */ ?>
+      <script type="text/javascript"><!--
+        var token = '<?php echo $token; ?>';
+      //--></script>
+      <script src="view/javascript/order_ext.js"></script>
+      <script type="text/javascript" src="view/javascript/bootstrap/js/bootstrap-multiselect.js"></script>
+      <link rel="stylesheet" href="view/javascript/bootstrap/css/bootstrap-multiselect.css" type="text/css"/>
+      <script type="text/javascript"><!--
+      $(document).ready(function() {
+        $('#input-order-status').multiselect({
+          enableHTML: true,
+          buttonClass: 'btn btn-default btn-sm',
+          nonSelectedText: 'Status',
+          numberDisplayed: 1
+        });
+        $('#form-order table > tbody > tr').on('click',function(e) {
+          if (!$(e.target).is(':first-child') && !$(e.target).hasClass('qosu-cell')) {
+            $(this).children('td:first-child').children('[type="checkbox"]').click();
+          }
+        });
+        $("tbody input[type='checkbox']").change(function(e) {
+          if($(this).is(":checked")) {
+            $(this).closest('tr').find('td').css({'background-color': '#fff7ed'});
+          }
+          else {
+            $(this).closest('tr').find('td').css({'background-color': 'transparent'});
+          }
+        });
+      });
+      //--></script>
+      ]]></add>
+    </operation>
+    <!-- Modify original javascript to support new filters -->
+    <operation>
+      <search><![CDATA[if (filter_order_status != '*') {]]></search>
+      <add position="replace"><![CDATA[if (filter_order_status != null) {]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[var filter_date_added = $('input[name=\'filter_date_added\']').val();]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_order
+      var filter_shipping_method = $('input[name=\'filter_shipping_method\']').val();
+      if (filter_shipping_method) {
+        url += '&filter_shipping_method=' + encodeURIComponent(filter_shipping_method);
+      }
+      var filter_payment_method = $('input[name=\'filter_payment_method\']').val();
+      if (filter_payment_method) {
+        url += '&filter_payment_method=' + encodeURIComponent(filter_payment_method);
+      }
+      var filter_delivery_preference = $('input[name=\'filter_delivery_preference\']').val();
+      if (filter_delivery_preference) {
+        url += '&filter_delivery_preference=' + encodeURIComponent(filter_delivery_preference);
+      }
+      var filter_shipping_date = $('input[name=\'filter_shipping_date\']').val();
+      if (filter_shipping_date) {
+        url += '&filter_shipping_date=' + encodeURIComponent(filter_shipping_date);
+      }
+      var filter_date_from = $('input[name=\'filter_date_from\']').val();
+      if (filter_date_from) {
+        url += '&filter_date_from=' + encodeURIComponent(filter_date_from);
+      }
+      var filter_date_to = $('input[name=\'filter_date_to\']').val();
+      if (filter_date_to) {
+        url += '&filter_date_to=' + encodeURIComponent(filter_date_to);
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$('#button-filter').on('click', function() {]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_order
+      $('.filters .form-control').on( "keypress", function(event) {
+        if (event.which == 13 && !event.shiftKey) {
+          event.preventDefault();
+          $('#button-filter').click();
+        }
+      });
+      $('#button-clear').on('click', function() {
+        url = 'index.php?route=sale/order&token=<?php echo $token; ?>';
+        location = url;
+      });
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Add date range searching -->
+  <file path="admin/model/sale/order.php">
+    <operation>
+      <search><![CDATA['o.date_added',]]></search>
+      <add position="before"><![CDATA[
+      'o.shipping_method',
+      'o.payment_method',
+      'o.shipping_date',
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[, o.date_modified]]></search>
+      <add position="replace"><![CDATA[, o.payment_method, o.shipping_method, o.delivery_preference, o.shipping_date, o.customer_id, o.date_modified]]></add>
+    </operation>
+    <operation>
+      <search index="0"><![CDATA[if (!empty($data['filter_date_added'])) {]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_order
+      if (!empty($data['filter_shipping_method'])) {
+        $sql .= " AND o.shipping_method LIKE '%" . $this->db->escape($data['filter_shipping_method']) . "%'";
+      }
+      if (!empty($data['filter_payment_method'])) {
+        $sql .= " AND o.payment_method LIKE '%" . $this->db->escape($data['filter_payment_method']) . "%'";
+      }
+      if (!empty($data['filter_delivery_preference'])) {
+        $sql .= " AND o.delivery_preference LIKE '%" . $this->db->escape($data['filter_delivery_preference']) . "%'";
+      }
+      if (!empty($data['filter_shipping_date'])) {
+        $sql .= " AND DATE(o.shipping_date) = DATE('" . $this->db->escape($data['filter_shipping_date']) . "')";
+      }
+      if (!empty($data['filter_date_from'])) {
+        $sql .= " AND DATE(o.date_added) >= DATE('" . $this->db->escape($data['filter_date_from']) . "')";
+      }
+      if (!empty($data['filter_date_to'])) {
+        $sql .= " AND DATE(o.date_added) <= DATE('" . $this->db->escape($data['filter_date_to']) . "')";
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="1"><![CDATA[if (!empty($data['filter_date_added'])) {]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_order
+      if (!empty($data['filter_shipping_method'])) {
+        $sql .= " AND shipping_method LIKE '%" . $this->db->escape($data['filter_shipping_method']) . "'";
+      }
+      if (!empty($data['filter_payment_method'])) {
+        $sql .= " AND payment_method LIKE '%" . $this->db->escape($data['filter_payment_method']) . "'";
+      }
+      if (!empty($data['filter_delivery_preference'])) {
+        $sql .= " AND delivery_preference LIKE '%" . $this->db->escape($data['filter_delivery_preference']) . "'";
+      }
+      if (!empty($data['filter_shipping_date'])) {
+        $sql .= " AND DATE(shipping_date) >= DATE('" . $this->db->escape($data['filter_shipping_date']) . "')";
+      }
+      if (!empty($data['filter_date_from'])) {
+        $sql .= " AND DATE(date_added) >= DATE('" . $this->db->escape($data['filter_date_from']) . "')";
+      }
+      if (!empty($data['filter_date_to'])) {
+        $sql .= " AND DATE(date_added) <= DATE('" . $this->db->escape($data['filter_date_to']) . "')";
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/controller/sale/order.php">
+    <!-- add sorting for extra columns -->
+    <operation>
+      <search><![CDATA[$data['sort_total'] = $this->url->link('sale/order', 'token=' . $this->session->data['token'] . '&sort=o.total' . $url, 'SSL');]]></search>
+      <add position="after"><![CDATA[
+      $data['sort_shipping_method'] = $this->url->link('sale/order', 'token=' . $this->session->data['token'] . '&sort=o.shipping_method' . $url, 'SSL');
+      $data['sort_payment_method'] = $this->url->link('sale/order', 'token=' . $this->session->data['token'] . '&sort=o.payment_method' . $url, 'SSL');
+      $data['sort_shipping_date'] = $this->url->link('sale/order', 'token=' . $this->session->data['token'] . '&sort=o.shipping_date' . $url, 'SSL');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['column_order_id'] = $this->language->get('column_order_id');]]></search>
+      <add position="after"><![CDATA[
+      // yym_admin_order
+      $data['column_payment_method'] = $this->language->get('column_payment_method');
+      $data['column_shipping_method'] = $this->language->get('column_shipping_method');
+      $data['column_delivery_preference'] = $this->language->get('column_delivery_preference');
+      $data['column_shipping_date'] = $this->language->get('column_shipping_date');
+      $data['entry_date_from'] = $this->language->get('entry_date_from');
+      $data['entry_date_to'] = $this->language->get('entry_date_to');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['customer'      => $result['customer'],]]></search>
+      <add position="after"><![CDATA[
+      // yym_admin_order
+      'customer_id'     => $result['customer_id'],
+      'link'            => $this->url->link('sale/customer/edit', 'token=' . $this->session->data['token'] . '&customer_id=' . $result['customer_id'], 'SSL'),
+      'payment_method'  => $result['payment_method'],
+      'shipping_method' => $result['shipping_method'],
+      'delivery_preference' => $result['delivery_preference'],
+      'shipping_date' => $result['shipping_date'] ? date($this->language->get('date_format_short'), strtotime($result['shipping_date'])) : '',
+      'shipping_dow' => $result['shipping_date'] ? date('l', strtotime($result['shipping_date'])) : '',
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="1"><![CDATA[if (isset($this->request->get['filter_date_added'])) {]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_order
+      if (isset($this->request->get['filter_shipping_method'])) {
+        $filter_shipping_method = $this->request->get['filter_shipping_method'];
+      } else {
+        $filter_shipping_method = null;
+      }
+      if (isset($this->request->get['filter_payment_method'])) {
+        $filter_payment_method = $this->request->get['filter_payment_method'];
+      } else {
+        $filter_payment_method = null;
+      }
+      if (isset($this->request->get['filter_delivery_preference'])) {
+        $filter_delivery_preference = $this->request->get['filter_delivery_preference'];
+      } else {
+        $filter_delivery_preference = null;
+      }
+      if (isset($this->request->get['filter_shipping_date'])) {
+        $filter_shipping_date = $this->request->get['filter_shipping_date'];
+      } else {
+        $filter_shipping_date = null;
+      }
+      if (isset($this->request->get['filter_date_from'])) {
+        $filter_date_from = $this->request->get['filter_date_from'];
+      } else {
+        $filter_date_from = null;
+      }
+      if (isset($this->request->get['filter_date_to'])) {
+        $filter_date_to = $this->request->get['filter_date_to'];
+      } else {
+        $filter_date_to = null;
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['filter_date_added'    => $filter_date_added,]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_order
+      'filter_shipping_method' => $filter_shipping_method,
+      'filter_payment_method' => $filter_payment_method,
+      'filter_delivery_preference' => $filter_delivery_preference,
+      'filter_shipping_date' => $filter_shipping_date,
+      'filter_date_from'     => $filter_date_from,
+      'filter_date_to'       => $filter_date_to,
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['filter_date_added'] = $filter_date_added;]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_order
+      $data['filter_shipping_method'] = $filter_shipping_method;
+      $data['filter_payment_method'] = $filter_payment_method;
+      $data['filter_delivery_preference'] = $filter_delivery_preference;
+      $data['filter_shipping_date'] = $filter_shipping_date;
+      $data['filter_date_from'] = $filter_date_from;
+      $data['filter_date_to'] = $filter_date_to;
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="2,3,4"><![CDATA[if (isset($this->request->get['filter_date_added'])) {]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_order
+      if (isset($this->request->get['filter_shipping_method'])) {
+        $url .= '&filter_shipping_method=' . $this->request->get['filter_shipping_method'];
+      }
+      if (isset($this->request->get['filter_payment_method'])) {
+        $url .= '&filter_payment_method=' . $this->request->get['filter_payment_method'];
+      }
+      if (isset($this->request->get['filter_delivery_preference'])) {
+        $url .= '&filter_delivery_preference=' . $this->request->get['filter_delivery_preference'];
+      }
+      if (isset($this->request->get['filter_shipping_date'])) {
+        $url .= '&filter_shipping_date=' . $this->request->get['filter_shipping_date'];
+      }
+      if (isset($this->request->get['filter_date_from'])) {
+        $url .= '&filter_date_from=' . $this->request->get['filter_date_from'];
+      }
+      if (isset($this->request->get['filter_date_to'])) {
+        $url .= '&filter_date_to=' . $this->request->get['filter_date_to'];
+      }
+      ]]></add>
+    </operation>
+    <!-- add order product price value and total value for ajax editing -->
+    <operation>
+      <search><![CDATA['quantity'		   => $product['quantity'],]]></search>
+      <add position="after"><![CDATA[
+      // yym_admin_order
+      'price_value' => $product['price'] + ($this->config->get('config_tax') ? $product['tax'] : 0),
+      'total_value' => $product['total'] + ($this->config->get('config_tax') ? ($product['tax'] * $product['quantity']) : 0),
+      ]]></add>
+    </operation>
+    <!-- add order total value for ajax editing -->
+    <operation>
+      <search index="0"><![CDATA['title' => $total['title'],]]></search>
+      <add position="before"><![CDATA[
+      // yym_admin_order
+      'order_total_id' => $total['order_total_id'],
+      'code' => $total['code'],
+      'value' => $total['value'],
+      ]]></add>
+    </operation>
+  </file>
+
+</modification>

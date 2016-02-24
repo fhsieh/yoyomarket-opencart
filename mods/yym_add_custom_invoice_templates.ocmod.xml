@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <name>Add Shopping / Packing / Invoice Tempaltes</name>
+  <code>yym_custom_invoice_templates</code>
+  <version>1.0</version>
+  <author>Felix Hsieh</author>
+  <link>http://www.yoyomarket.jp</link>
+
+  <!-- Update admin controller for packing/shopping/invoice templates -->
+  <!-- Requires modifications from yym_add_delivery_date_time -->
+  <file path="admin/controller/sale/order.php">
+    <!-- Receipt: customize fields -->
+    <operation>
+      <search><![CDATA[$data['text_invoice'] = $this->language->get('text_invoice');]]></search>
+      <add position="replace" offset="11"><![CDATA[
+      // yym_custom_invoice_templates
+      $data['text_order_id'] = $this->language->get('text_order_id');
+      $data['text_date_added'] = $this->language->get('text_date_added');
+      $data['text_bill_to'] = $this->language->get('text_bill_to');
+      $data['text_email'] = $this->language->get('text_email');
+      $data['text_ship_to'] = $this->language->get('text_ship_to');
+      $data['text_telephone'] = $this->language->get('text_telephone');
+      $data['text_payment'] = $this->language->get('text_payment');
+      $data['text_shipping'] = $this->language->get('text_shipping');
+      $data['text_delivery'] = $this->language->get('text_delivery');
+      $data['entry_footer'] = $this->language->get('entry_footer');
+      ]]></add>
+    </operation>
+    <!-- Receipt: customize data -->
+    <operation>
+      <search trim="true"><![CDATA['order_id'	         => $order_id,]]></search>
+      <add position="replace" offset="18"><![CDATA[
+      // yym_custom_invoice_templates
+      'order_id'            => $order_id,
+      'date_added'          => date($this->language->get('date_format_short'), strtotime($order_info['date_added'])),
+      'store_email'         => $store_email,
+      'store_telephone'     => $store_telephone,
+      'email'               => $order_info['email'],
+      'telephone'           => $order_info['telephone'],
+      'payment_address'     => $payment_address,
+      'payment_method'      => $order_info['payment_method'],
+      'shipping_address'    => $shipping_address,
+      'shipping_method'     => $order_info['shipping_method'],
+      'delivery_preference' => $order_info['delivery_preference'],
+      'delivery_telephone'  => $order_info['delivery_telephone'],
+      'product'             => $product_data,
+      'voucher'             => $voucher_data,
+      'total'               => $total_data,
+      'comment'             => nl2br($order_info['comment'])
+      ]]></add>
+    </operation>
+
+    <!-- Packing list: customize fields -->
+    <operation>
+      <search index="1"><![CDATA[$data['text_shipping'] = $this->language->get('text_shipping');]]></search>
+      <add position="replace" offset="20"><![CDATA[
+      // yym_custom_invoice_templates
+      $data['text_order_id'] = $this->language->get('text_order_id');
+      $data['text_date_added'] = $this->language->get('text_date_added');
+      $data['text_bill_to'] = $this->language->get('text_bill_to');
+      $data['text_email'] = $this->language->get('text_email');
+      $data['text_ship_to'] = $this->language->get('text_ship_to');
+      $data['text_telephone'] = $this->language->get('text_telephone');
+      $data['text_payment'] = $this->language->get('text_payment');
+      $data['text_shipping'] = $this->language->get('text_shipping');
+      $data['text_delivery'] = $this->language->get('text_delivery');
+
+      $data['column_box'] = $this->language->get('column_box');
+      ]]></add>
+    </operation>
+    <!-- Packing list: add shipping address -->
+    <operation>
+      <search index="1"><![CDATA[if ($order_info['shipping_address_format']) {]]></search>
+      <add position="before"><![CDATA[
+      // yym_custom_invoice_templates
+      if ($order_info['payment_address_format']) {
+        $format = $order_info['payment_address_format'];
+      } else {
+        $format = '{firstname} {lastname}' . "\n" . '{company}' . "\n" . '{address_1}' . "\n" . '{address_2}' . "\n" . '{city} {postcode}' . "\n" . '{zone}' . "\n" . '{country}';
+      }
+
+      $find = array(
+        '{firstname}',
+        '{lastname}',
+        '{company}',
+        '{address_1}',
+        '{address_2}',
+        '{city}',
+        '{postcode}',
+        '{zone}',
+        '{zone_code}',
+        '{country}'
+      );
+
+      $replace = array(
+        'firstname' => $order_info['payment_firstname'],
+        'lastname'  => $order_info['payment_lastname'],
+        'company'   => $order_info['payment_company'],
+        'address_1' => $order_info['payment_address_1'],
+        'address_2' => $order_info['payment_address_2'],
+        'city'      => $order_info['payment_city'],
+        'postcode'  => $order_info['payment_postcode'],
+        'zone'      => $order_info['payment_zone'],
+        'zone_code' => $order_info['payment_zone_code'],
+        'country'   => $order_info['payment_country']
+      );
+
+      $payment_address = str_replace(array("\r\n", "\r", "\n"), '<br />', preg_replace(array("/\s\s+/", "/\r\r+/", "/\n\n+/"), '<br />', trim(str_replace($find, $replace, $format))));
+      ]]></add>
+    </operation>
+    <!-- Packing list: add chilled/frozen attribute -->
+    <operation>
+      <search index="2"><![CDATA[$this->load->model('tool/upload');]]></search>
+      <add position="after"><![CDATA[
+      // yym_custom_invoice_templates
+      $this->load->model('catalog/attribute_image');
+      $temps = array('Chilled', '冷蔵', 'Frozen', '冷凍');
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="2"><![CDATA[$option_data = array();]]></search>
+      <add position="before"><![CDATA[
+      // yym_custom_invoice_templates
+      $attributes = array();
+      $product_attributes = $this->model_catalog_product->getProductAttributeImages($product['product_id']);
+      foreach ($product_attributes as $product_attribute) {
+        $attribute_info = $this->model_catalog_attribute_image->getAttributeImage($product_attribute['attribute_image_id']);
+        if ($attribute_info && in_array($attribute_info['name'], $temps)) {
+          $attributes[] = $attribute_info['name'];
+        }
+      }
+      $attributes = implode('/', $attributes);
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['sku'      => $product_info['sku'],]]></search>
+      <add position="replace" offset="5"><![CDATA[
+      // yym_custom_invoice_templates
+      'attributes' => $attributes,
+      'notes'      => $product_info['notes'],
+      ]]></add>
+    </operation>
+    <!-- Packing list: sort products -->
+    <operation>
+      <search index="2"><![CDATA[$data['orders'][] = array(]]></search>
+      <add position="before"><![CDATA[
+      // yym_custom_invoice_templates
+      $temps = array(
+        'Frozen'          => 1, '冷凍'            => 1,
+        'Frozen/Chilled'  => 2, '冷凍/冷蔵'        => 2,
+        'Chilled/Frozen'  => 2, '冷蔵/冷凍'        => 2,
+        'Chilled'         => 3, '冷蔵'            => 3
+      );
+
+      $sort = array(
+        'box'     => array(),
+        'weight'  => array()
+      );
+
+      foreach ($product_data as $key => $row) {
+        // set temperature sort
+        if ($row['attributes'] != '') {
+          $sort['box'][$key] = $temps[$row['attributes']];
+        } else {
+          $sort['box'][$key] = 4;
+        }
+
+        // set weight sort
+        $sort['weight'][$key] = (float)substr($row['weight'], 0, -2); // requires default weight to be "kg"
+      }
+
+      array_multisort($sort['box'], SORT_ASC, $sort['weight'], SORT_DESC, $product_data);
+      ]]></add>
+    </operation>
+    <!-- Packing list: customize data -->
+    <operation>
+      <search><![CDATA['order_id'	       => $order_id,]]></search>
+      <add position="replace" offset="14"><![CDATA[
+      // yym_custom_invoice_templates
+      'order_id'            => $order_id,
+      'date_added'          => date($this->language->get('date_format_short'), strtotime($order_info['date_added'])),
+      'email'               => $order_info['email'],
+      'telephone'           => $order_info['telephone'],
+      'payment_address'     => $payment_address,
+      'payment_method'      => $order_info['payment_method'],
+      'shipping_address'    => $shipping_address,
+      'shipping_method'     => $order_info['shipping_method'],
+      'delivery_preference' => $order_info['delivery_preference'],
+      'delivery_telephone'  => $order_info['delivery_telephone'],
+      'product'             => $product_data,
+      'total'               => $this->currency->format($order_info['total'], $order_info['currency_code'], $order_info['currency_value']),
+      'comment'             => nl2br($order_info['comment'])
+      ]]></add>
+    </operation>
+    <!-- Packing list: get total product weight -->
+    <operation>
+      <search><![CDATA[$product_info['weight']]]></search>
+      <add position="replace"><![CDATA[$product_info['weight'] * $product['quantity']]]></add>
+    </operation>
+    <!-- Packing list: clean up data -->
+    <operation>
+      <search index="1"><![CDATA[$store_info = $this->model_setting_setting->getSetting('config', $order_info['store_id']);]]></search>
+      <add position="replace" offset="18"><![CDATA[]]></add>
+    </operation>
+
+    <!-- Shopping list: buttons on order list, order info -->
+    <operation>
+      <search><![CDATA[$data['button_invoice_print'] = $this->language->get('button_invoice_print');]]></search>
+      <add position="before"><![CDATA[
+      // yym_custom_invoice_templates
+      $data['button_shopping_print'] = $this->language->get('button_shopping_print');
+      ]]></add>
+    </operation>
+    <!-- Shopping list: route handler -->
+    <operation>
+      <search><![CDATA[$data['invoice'] = $this->url->link('sale/order/invoice', 'token=' . $this->session->data['token'], 'SSL');]]></search>
+      <add position="after"><![CDATA[
+      // yym_custom_invoice_templates
+      $data['shopping'] = $this->url->link('sale/order/shopping', 'token=' . $this->session->data['token'], 'SSL');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['shipping'] = $this->url->link('sale/order/shipping', 'token=' . $this->session->data['token'] . '&order_id=' . (int)$this->request->get['order_id'], 'SSL');]]></search>
+      <add position="after"><![CDATA[
+      // yym_custom_invoice_templates
+      $data['shopping'] = $this->url->link('sale/order/shopping', 'token=' . $this->session->data['token'] . '&order_id=' . (int)$this->request->get['order_id'], 'SSL');
+      $data['gift'] = $this->url->link('sale/order/invoice', 'gift=1&token=' . $this->session->data['token'] . '&order_id=' . (int)$this->request->get['order_id'], 'SSL');
+      ]]></add>
+    </operation>
+    <!-- Shopping list: method -->
+    <operation>
+      <search><![CDATA[public function shipping() {]]></search>
+      <add position="before"><![CDATA[
+      // yym_custom_invoice_templates
+      public function shopping() {
+        $this->load->language('sale/order');
+
+        if ($this->request->server['HTTPS']) {
+          $data['base'] = HTTPS_SERVER;
+        } else {
+          $data['base'] = HTTP_SERVER;
+        }
+
+        $data['direction'] = $this->language->get('direction');
+        $data['lang'] = $this->language->get('code');
+
+        $data['text_order_id'] = $this->language->get('text_order_id');
+        $data['text_date_added'] = $this->language->get('text_date_added');
+        $data['text_bill_to'] = $this->language->get('text_bill_to');
+        $data['text_email'] = $this->language->get('text_email');
+        $data['text_ship_to'] = $this->language->get('text_ship_to');
+        $data['text_telephone'] = $this->language->get('text_telephone');
+        $data['text_payment'] = $this->language->get('text_payment');
+        $data['text_shipping'] = $this->language->get('text_shipping');
+        $data['text_delivery'] = $this->language->get('text_delivery');
+
+        $data['column_location'] = $this->language->get('column_location');
+        $data['column_model'] = $this->language->get('column_model');
+        $data['column_product'] = $this->language->get('column_product');
+        $data['column_quantity'] = $this->language->get('column_quantity');
+        $data['column_price'] = $this->language->get('column_price');
+        $data['column_cost'] = $this->language->get('column_cost');
+        $data['column_purchased'] = $this->language->get('column_purchased');
+        $data['column_total'] = $this->language->get('column_total');
+        $data['column_comment'] = $this->language->get('column_comment');
+
+        $this->load->model('sale/order');
+
+        $this->load->model('catalog/product');
+
+        $this->load->model('setting/setting');
+
+        $data['orders'] = array();
+
+        $orders = array();
+
+        if (isset($this->request->post['selected'])) {
+          $orders = $this->request->post['selected'];
+        } elseif (isset($this->request->get['order_id'])) {
+          $orders[] = $this->request->get['order_id'];
+        }
+
+        foreach ($orders as $order_id) {
+          $order_info = $this->model_sale_order->getOrder($order_id);
+
+          if ($order_info) {
+            if ($order_info['payment_address_format']) {
+              $format = $order_info['payment_address_format'];
+            } else {
+              $format = '{firstname} {lastname}' . "\n" . '{company}' . "\n" . '{address_1}' . "\n" . '{address_2}' . "\n" . '{city} {postcode}' . "\n" . '{zone}' . "\n" . '{country}';
+            }
+
+            $find = array(
+              '{firstname}',
+              '{lastname}',
+              '{company}',
+              '{address_1}',
+              '{address_2}',
+              '{city}',
+              '{postcode}',
+              '{zone}',
+              '{zone_code}',
+              '{country}'
+            );
+
+            $replace = array(
+              'firstname' => $order_info['payment_firstname'],
+              'lastname'  => $order_info['payment_lastname'],
+              'company'   => $order_info['payment_company'],
+              'address_1' => $order_info['payment_address_1'],
+              'address_2' => $order_info['payment_address_2'],
+              'city'      => $order_info['payment_city'],
+              'postcode'  => $order_info['payment_postcode'],
+              'zone'      => $order_info['payment_zone'],
+              'zone_code' => $order_info['payment_zone_code'],
+              'country'   => $order_info['payment_country']
+            );
+
+            $payment_address = str_replace(array("\r\n", "\r", "\n"), '<br />', preg_replace(array("/\s\s+/", "/\r\r+/", "/\n\n+/"), '<br />', trim(str_replace($find, $replace, $format))));
+
+            if ($order_info['shipping_address_format']) {
+              $format = $order_info['shipping_address_format'];
+            } else {
+              $format = '{firstname} {lastname}' . "\n" . '{company}' . "\n" . '{address_1}' . "\n" . '{address_2}' . "\n" . '{city} {postcode}' . "\n" . '{zone}' . "\n" . '{country}';
+            }
+
+            $find = array(
+              '{firstname}',
+              '{lastname}',
+              '{company}',
+              '{address_1}',
+              '{address_2}',
+              '{city}',
+              '{postcode}',
+              '{zone}',
+              '{zone_code}',
+              '{country}'
+            );
+
+            $replace = array(
+              'firstname' => $order_info['shipping_firstname'],
+              'lastname'  => $order_info['shipping_lastname'],
+              'company'   => $order_info['shipping_company'],
+              'address_1' => $order_info['shipping_address_1'],
+              'address_2' => $order_info['shipping_address_2'],
+              'city'      => $order_info['shipping_city'],
+              'postcode'  => $order_info['shipping_postcode'],
+              'zone'      => $order_info['shipping_zone'],
+              'zone_code' => $order_info['shipping_zone_code'],
+              'country'   => $order_info['shipping_country']
+            );
+
+            $shipping_address = str_replace(array("\r\n", "\r", "\n"), '<br />', preg_replace(array("/\s\s+/", "/\r\r+/", "/\n\n+/"), '<br />', trim(str_replace($find, $replace, $format))));
+
+            $product_data = array();
+
+            $products = $this->model_sale_order->getOrderProducts($order_id);
+
+            foreach ($products as $product) {
+              $product_info = $this->model_catalog_product->getProduct($product['product_id']);
+
+              $option_data = array();
+
+              $options = $this->model_sale_order->getOrderOptions($order_id, $product['order_product_id']);
+
+              foreach ($options as $option) {
+                if ($option['type'] != 'file') {
+                  $value = $option['value'];
+                } else {
+                  $value = '';
+                }
+
+                $option_data[] = array(
+                  'name'  => $option['name'],
+                  'value' => $value
+                );
+              }
+
+              $product_data[] = array(
+                'name'     => $product_info['name'], // use $product_info for admin language
+                'model'    => $product['model'],
+                'option'   => $option_data,
+                'quantity' => $product['quantity'],
+                'location' => $product_info['location'],
+                'price'    => $this->currency->format($product['price'] + ($this->config->get('config_tax') ? $product['tax'] : 0), $order_info['currency_code'], $order_info['currency_value']),
+                'cost'     => $this->currency->format($product_info['cost'], $order_info['currency_code'], $order_info['currency_value']),
+                'total'    => $this->currency->format($product['total'] + ($this->config->get('config_tax') ? ($product['tax'] * $product['quantity']) : 0), $order_info['currency_code'], $order_info['currency_value']),
+                'notes'    => $product_info['notes']
+              );
+            }
+
+            $colors = array(
+              'Orange' => 1,
+              'Pink'   => 2,
+              'Yellow' => 3,
+              'Green'  => 4,
+              'Purple' => 5,
+              'Blue'   => 6
+            );
+
+            $sort = array(
+              'color'   => array(),
+              'section' => array()
+            );
+
+            foreach ($product_data as $key => $row) {
+              $color = 0;
+              $section = 0;
+
+              if (strpos($row['location'], '-') !== false) {
+                $parse = explode('-', $row['location']);
+                if (array_key_exists($parse[0], $colors)) {
+                  $color = $colors[$parse[0]];
+                }
+                if (is_numeric($parse[1])) {
+                  $section = (int)$parse[1];
+                }
+              } else {
+                if (array_key_exists($row['location'], $colors)) {
+                  $color = $colors[$row['location']];
+                }
+              }
+
+              $sort['color'][$key] = $color;
+              $sort['section'][$key] = $section;
+            }
+
+            array_multisort($sort['color'], SORT_ASC, $sort['section'], SORT_ASC, $product_data);
+
+            $data['orders'][] = array(
+              'order_id'            => $order_id,
+              'date_added'          => date($this->language->get('date_format_short'), strtotime($order_info['date_added'])),
+              'name'                => $order_info['payment_firstname'] . ' ' . $order_info['payment_lastname'],
+              'email'               => $order_info['email'],
+              'telephone'           => $order_info['telephone'],
+              'shipping_address'    => $shipping_address,
+              'shipping_method'     => $order_info['shipping_method'],
+              'payment_address'     => $payment_address,
+              'payment_method'      => $order_info['payment_method'],
+              'delivery_preference' => $order_info['delivery_preference'],
+              'delivery_telephone'  => $order_info['delivery_telephone'],
+              'product'             => $product_data,
+              'comment'             => nl2br($order_info['comment'])
+            );
+          }
+        }
+
+		$this->response->setOutput($this->load->view('sale/order_shopping.tpl', $data));
+      }
+      ]]></add>
+    </operation>
+    <!-- Gift receipt: route handler -->
+    <operation>
+      <search><![CDATA[$data['shopping'] = $this->url->link('sale/order/shopping', 'token=' . $this->session->data['token'] . '&order_id=' . (int)$this->request->get['order_id'], 'SSL');]]></search>
+      <add position="after"><![CDATA[
+      // yym_custom_invoice_templates
+      $data['gift'] = $this->url->link('sale/order/invoice', 'gift=1&token=' . $this->session->data['token'] . '&order_id=' . (int)$this->request->get['order_id'], 'SSL');
+      ]]></add>
+    </operation>
+    <operation>
+      <search index="0"><![CDATA[$orders[] = $this->request->get['order_id'];]]></search>
+      <add position="after"><![CDATA[
+      // yym_custom_invoice_templates
+      if (isset($this->request->get['gift'])) {
+        $data['gift'] = (int)$this->request->get['gift'];
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+</modification>

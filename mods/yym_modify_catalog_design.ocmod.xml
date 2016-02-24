@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+  <name>Modify Catalog Design</name>
+  <code>yym_catalog_design</code>
+  <version>1.0</version>
+  <author>Felix Hsieh</author>
+  <link>http://www.yoyomarket.jp</link>
+
+  <!-- Remove affiliate login, register, forgotten classes (credit: DIY Web) -->
+  <file path="catalog/controller/affiliate/login.php">
+    <operation>
+      <search><![CDATA[class ControllerAffiliateLogin extends Controller {]]></search>
+      <add position="replace"><![CDATA[
+      // yym_catalog_design
+      class ControllerAffiliateLogin extends Controller {} /*
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/affiliate/register.php">
+    <operation>
+      <search><![CDATA[class ControllerAffiliateRegister extends Controller {]]></search>
+      <add position="replace"><![CDATA[
+      // yym_catalog_design
+      class ControllerAffiliateRegister extends Controller {} /*
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/affiliate/forgotten.php">
+    <operation>
+      <search><![CDATA[class ControllerAffiliateForgotten extends Controller {]]></search>
+      <add position="replace"><![CDATA[
+      // yym_catalog_design
+      class ControllerAffiliateForgotten extends Controller {} /*
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Remove return classes -->
+  <file path="catalog/controller/account/return.php">
+    <operation>
+      <search><![CDATA[class ControllerAccountReturn extends Controller {]]></search>
+      <add position="replace"><![CDATA[
+      // yym_catalog_design
+      class ControllerAccountReturn extends Controller {} /*
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Add third level to catalog category module (credit: Quality Works) -->
+  <file path="catalog/controller/module/category.php">
+    <operation>
+      <search><![CDATA[$children_data[] = array]]></search>
+      <add position="before"><![CDATA[
+      // yym_catalog_design
+      $grand_children_data = array();
+      $grand_children = $this->model_catalog_category->getCategories($child['category_id']);
+
+      foreach($grand_children as $grand_child) {
+        $child_filter_data = array('filter_category_id' => $grand_child['category_id'], 'filter_sub_category' => true);
+        $grand_children_data[] = array(
+          'category_id' => $grand_child['category_id'],
+          'name' => $grand_child['name'] . ($this->config->get('config_product_count') ? ' (' . $this->model_catalog_product->getTotalProducts($child_filter_data) . ')' : ''),
+          'href' => $this->url->link('product/category', 'path=' . $category['category_id'] . '_' . $child['category_id'] . '_' . $grand_child['category_id'])
+        );
+      }
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA['name' => $child['name'] . ($this->config->get('config_product_count') ? ' (' . $this->model_catalog_product->getTotalProducts($filter_data) . ')' : ''),]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_design
+      'grand_children' => $grand_children_data,
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$this->load->model('catalog/category');]]></search>
+      <add position="before"><![CDATA[
+      // yym_catalog_design
+      if (isset($parts[2])) {
+        $data['grand_child_id'] = $parts[2];
+      } else {
+        $data['grand_child_id'] = 0;
+      }
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/view/theme/stowear/template/module/category.tpl">
+    <operation>
+      <search ><![CDATA[<a href="<?php echo $child['href']; ?>" class="active"><?php echo $child['name']; ?></a>]]></search>
+      <add position="after"><![CDATA[
+      <?php /* yym_catalog_design */ ?>
+      <?php if ($child['grand_children']) { ?>
+      <ul>
+        <?php foreach ($child['grand_children'] as $grand_child) { ?>
+        <li>
+          <?php if ($grand_child['category_id'] == $grand_child_id) { ?>
+          <a href="<?php echo $grand_child['href']; ?>" class="active"><?php echo $grand_child['name']; ?></a>
+          <?php } else { ?>
+          <a href="<?php echo $grand_child['href']; ?>"><?php echo $grand_child['name']; ?></a>
+          <?php } ?>
+        </li>
+        <?php } ?>
+      </ul>
+      <?php } ?>
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Add language and route handlers for points link -->
+  <file path="catalog/controller/common/footer.php">
+    <operation>
+      <search><![CDATA[$data['text_newsletter'] = $this->language->get('text_newsletter');]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_design
+      $data['text_points'] = $this->language->get('text_points');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['newsletter'] = $this->url->link('account/newsletter', '', 'SSL');]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_design
+      $data['points'] = '/points';
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Modify product page -->
+  <file path="catalog/view/theme/stowear/template/product/product.tpl">
+    <operation>
+      <search><![CDATA[<?php if ($tags) { ?>]]></search>
+      <add position="before"><![CDATA[
+      <?php /* yym_custom: remove tags from front end >?
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<?php if ($products) { ?>]]></search>
+      <add position="before"><![CDATA[
+      <?php */ ?>
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Modify Specials module sorting -->
+  <file path="catalog/model/catalog/product.php">
+    <operation>
+      <search index="1"><![CDATA[$sort_data = array(]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_design
+      'ps.priority',
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$sql .= " DESC, LCASE(pd.name) DESC";]]></search>
+      <add position="replace"><![CDATA[
+      $sql .= " DESC, LCASE(pd.name) ASC";
+      ]]></add>
+    </operation>
+  </file>
+  <file path="catalog/controller/module/special.php">
+    <operation>
+      <search><![CDATA['sort'  => 'pd.name',]]></search>
+      <add position="replace" offset="1"><![CDATA[
+      // yym_catalog_design
+      'sort'  => 'ps.priority',
+      'order' => 'DESC',
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['button_compare'] = $this->language->get('button_compare');]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_design
+      $data['text_all'] = $this->language->get('text_all');
+      $data['special'] = $this->url->link('product/special');
+      ]]></add>
+    </operation>
+  </file>
+  <file path="catalog/view/theme/stowear/template/module/special.tpl">
+    <operation>
+      <search><![CDATA[<div class="box-heading"><?php echo $heading_title; ?></div>]]></search>
+      <add position="replace"><![CDATA[<div class="box-heading"><?php echo $heading_title; ?> <a href="<?php echo $special; ?>" style="line-height: 1em; font-size: 0.9em; font-weight: normal; text-transform: none; margin-left: 1em;"><?php echo $text_all; ?></a></div>]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Add delivery date/time to catalog account order info -->
+  <file path="catalog/model/account/order.php">
+    <operation>
+      <search><![CDATA['shipping_method'         => $order_query->row['shipping_method'],]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_design
+      'delivery_preference' => $order_query->row['delivery_preference'],
+      'delivery_telephone'  => $order_query->row['delivery_telephone'],
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="catalog/controller/account/order.php">
+    <operation>
+      <search><![CDATA[$data['shipping_method'] = $order_info['shipping_method'];]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_design
+      $data['delivery_preference'] = $order_info['delivery_preference'];
+      $data['delivery_telephone'] = $order_info['delivery_telephone'];
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['text_payment_address'] = $this->language->get('text_payment_address');]]></search>
+      <add position="after"><![CDATA[
+      // yym_catalog_design
+      $data['text_delivery'] = $this->language->get('text_delivery');
+      ]]></add>
+    </operation>
+  </file>
+
+
+
+  <!-- Add HDPI images -->
+  <!-- header logo is modified directly in catalog/view/theme/stowear/template/common/header/header_01.tpl -->
+  <file path="catalog/view/theme/stowear/template/common/language.tpl">
+    <operation>
+      <search><![CDATA[<img src="image/flags/<?php echo $language['image']; ?>" alt="<?php echo $language['name']; ?>" title="<?php echo $language['name']; ?>" width="16px" height="11px" />]]></search>
+      <add position="replace"><![CDATA[<img src="image/flags/<?php echo $language['image']; ?>" srcset="image/flags/<?php echo $language['image']; ?> 1x, image/flags/<?php echo str_replace('.png', '@2x.png', $language['image']); ?> 2x" alt="<?php echo $language['name']; ?>" title="<?php echo $language['name']; ?>" width="19px" height="13px" />]]></add>
+    </operation>
+  </file>
+
+  <!-- popup cart image -->
+  <file path="catalog/view/theme/stowear/template/common/cart.tpl">
+    <operation>
+      <search><![CDATA[<img src="image/<?php echo $theme_options->get( 'cart_icon' ); ?>" alt="Icon cart">]]></search>
+      <add position="replace"><![CDATA[<img src="image/<?php echo $theme_options->get( 'cart_icon' ); ?>" srcset="image/<?php echo $theme_options->get('cart_icon'); ?> 1x, image/<?php echo str_replace('.png', '@2x.png', $theme_options->get('cart_icon')); ?> 2x" alt="Cart">]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[<img src="catalog/view/theme/stowear/img/icon-cart.png" alt="Icon cart">]]></search>
+      <add position="replace"><![CDATA[<img src="catalog/view/theme/stowear/img/icon-cart.png" srcset="catalog/view/theme/stowear/img/icon-cart.png 1x, catalog/view/theme/stowear/img/icon-cart@2x.png 2x" alt="Cart">]]></add>
+    </operation>
+  </file>
+
+  <!-- slideshow images -->
+  <file path="catalog/controller/module/slideshow.php">
+    <operation>
+      <search><![CDATA['image'   => $this->model_tool_image->resize($result['image'], $setting['width'], $setting['height'])]]></search>
+      <add position="replace"><![CDATA[
+      'image' => 'image/' . $result['image']
+      ]]></add>
+    </operation>
+  </file>
+
+  <!-- footer payment icons -->
+  <file path="catalog/view/theme/stowear/template/common/footer.tpl">
+    <operation>
+      <search><![CDATA[echo '<img src="image/' .$payment['img']. '" alt="' .$payment['name']. '">';]]></search>
+      <add position="replace"><![CDATA[echo '<img src="image/' .$payment['img']. '" srcset="image/' .$payment['img']. ' 1x, image/' .str_replace('.png', '@2x.png', $payment['img']). ' 2x" alt="' .$payment['name']. '">';]]></add>
+    </operation>
+    <!-- fix facebook widget width -->
+    <operation>
+      <search><![CDATA[data-width="260" ]]></search>
+      <add position="replace"><![CDATA[data-width="222" ]]></add>
+    </operation>
+  </file>
+
+</modification>

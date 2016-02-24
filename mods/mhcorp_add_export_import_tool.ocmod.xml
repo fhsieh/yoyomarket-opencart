@@ -1,0 +1,36 @@
+<modification>
+  <name>Add Export / Import Tool</name>
+  <code>mhcorp_export_import_tool</code>
+  <version>2.0.x</version>
+  <author>mhccorp</author>
+  <link>http://www.opencart.com</link>
+
+  <!-- Add export/import to admin menu -->
+  <file path="admin/controller/common/menu.php">
+    <operation>
+      <search><![CDATA[$data['text_backup'] = $this->language->get('text_backup');]]></search>
+      <add position="after"><![CDATA[
+      // mhcorp_export_import_tool
+      $data['text_export_import'] = $this->language->get('text_export_import');
+      ]]></add>
+    </operation>
+    <operation>
+      <search><![CDATA[$data['backup'] = $this->url->link('tool/backup', 'token=' . $this->session->data['token'], 'SSL');]]></search>
+      <add position="after"><![CDATA[
+      // mhcorp_export_import_tool
+      $data['export_import'] = $this->url->link('tool/export_import', 'token=' . $this->session->data['token'], 'SSL');
+      ]]></add>
+    </operation>
+  </file>
+
+  <file path="admin/view/template/common/menu.tpl">
+    <operation>
+      <search><![CDATA[<li><a href="<?php echo $backup; ?>"><?php echo $text_backup; ?></a></li>]]></search>
+      <add position="after"><![CDATA[
+      <?php /* mhcorp_export_import_tool */ ?>
+      <li><a href="<?php echo $export_import; ?>"><?php echo $text_export_import; ?></a></li>
+      ]]></add>
+    </operation>
+  </file>
+
+</modification>

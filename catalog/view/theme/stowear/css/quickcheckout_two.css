@@ -1,0 +1,24 @@
+.quickcheckoutleft {
+	width: 66%;
+	float:left;
+}
+.quickcheckoutright {
+	width: 32%;
+	margin-left: 10px;
+	float: left;
+}
+.quickcheckoutmid {
+	width: 100%;
+}
+
+@media (min-width: 768px) {
+  .quickcheckout-confirm-left {
+    padding-right: 10px;
+  }
+  .quickcheckout-confirm-mid {
+    padding-left: 0; padding-right: 10px;
+  }
+  .quickcheckout-confirm-right {
+    padding-left: 0;
+  }
+}

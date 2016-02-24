@@ -1,0 +1,71 @@
+* {
+  font-family: sans-serif;
+}
+
+.container {
+  width: 19cm;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+table, th, td {
+  border: thin solid #888888;
+}
+td {
+  font-size: 9px;
+  padding: 2px;
+}
+
+tr.muted {
+  background-color: #ffcdd2; /* #eeeeee; */
+  color: #b71c1c;
+}
+
+tr.disabled {
+  background-color: #dddddd;
+  color: #888888;
+}
+
+td.missing {
+  background-color: #fff176;
+}
+
+td.title {
+  font-size: 32px;
+}
+td.location {
+  padding: 5px;
+  text-size: 10px;
+  text-transform: uppercase;
+  color: #ffffff;
+  background-color: #000000;
+}
+td.model {
+  font-size: 8px;
+  width: 2cm;
+}
+td.cost, td.quantity, td.total {
+  width: 1.5cm;
+}
+td.note {
+  width: 4cm;
+}
+
+.date {
+  font-size: 10px;
+}
+
+.pull-right {
+  float: right;
+}
+.text-left {
+  text-align: left;
+}
+.text-center {
+  text-align: center;
+}
+.text-right {
+  text-align: right;
+}
