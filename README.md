@@ -3,7 +3,7 @@ yoyomarket-opencart
 
 Ecommerce system for Yoyo Market built on OpenCart and based on Stowear theme.
 
-![Desktop and mobile design](https://raw.githubusercontent.com/fhsieh/yoyomarket-opencart/master/screenshots/design.png)
+![Desktop and mobile design](https://user-images.githubusercontent.com/9514732/32374687-20b6e142-c0e2-11e7-967f-3c9232a1cbf3.png)
 
 Features: full multi-language localization, full responsive design, quick searching, @2x images, localization for shipping within Japan and scripts to support custom order request with Kuroneko Yamato shipping policies.
 
@@ -25,7 +25,7 @@ Customers must be allowed to choose a specific delivery date and time for their 
 
 During checkout, OpenCart passes the customer's selected shipping address and the current server date/time to `yoyo-quick-checkout.js`. The script calculates the earliest available delivery date and time based on the arguments, and uses jQuery to modify the datepicker component and time select dropdown component to reflect the delivery date/time options available for the customer.
 
-![Shipping to Tokyo, Okinawa, and Yamaguchi](https://raw.githubusercontent.com/fhsieh/yoyomarket-opencart/master/screenshots/shipping.png)
+![Shipping to Tokyo, Okinawa, and Yamaguchi](https://user-images.githubusercontent.com/9514732/32374691-1b302990-c0e2-11e7-8f20-adc92014a29f.gif)
 
 
 
@@ -33,7 +33,7 @@ During checkout, OpenCart passes the customer's selected shipping address and th
 
 List of prefectures in Japan are sorted according to different localization standards. In English, prefectures are generally sorted A-to-Z, whereas in Japan, prefectures are sorted in their relative North-to-South geographic location in Japan (rather than UTF sorting) according to the [JIS X 0401 standard](https://ja.wikipedia.org/wiki/%E5%85%A8%E5%9B%BD%E5%9C%B0%E6%96%B9%E5%85%AC%E5%85%B1%E5%9B%A3%E4%BD%93%E3%82%B3%E3%83%BC%E3%83%89#.E9.83.BD.E9.81.93.E5.BA.9C.E7.9C.8C.E3.82.B3.E3.83.BC.E3.83.89). i18n for prefectures is provided by `mods/krotek_add_multilingual_zones.ocmod.xml` which adds inline i18n without modifying the database structure and adds methods to parse the correct i18n string, and custom sorting is implemented in `mods/yym_add_jp_zone_sorting.ocmod.xml` which detects the customer's current language in the session variable and applies either an alphabetical or code sort method.
 
-![Sorting in English vs Japanese](https://raw.githubusercontent.com/fhsieh/yoyomarket-opencart/master/screenshots/sorting.png)
+![Sorting in English vs Japanese](https://user-images.githubusercontent.com/9514732/32374692-218c8784-c0e2-11e7-882d-1b5c927b8cf8.png)
 
 
 
@@ -46,7 +46,8 @@ List of prefectures in Japan are sorted according to different localization stan
 
 Add customized printable views for 1) customer invoice/receipt, 2) product purchase list, and 3) packing list.
 
-![Printable views](https://raw.githubusercontent.com/fhsieh/yoyomarket-opencart/master/screenshots/prints.png)
+![Printable views](https://user-images.githubusercontent.com/9514732/32374689-210facaa-c0e2-11e7-9692-2ce35bac95a3.png)
+
 
 
 **Modify Admin Order View**
@@ -54,7 +55,7 @@ Add customized printable views for 1) customer invoice/receipt, 2) product purch
 
 Modify default OpenCart order detail view for consolidated view, inline AJAX editing billing/shipping/product editing, etc.
 
-![Custom order view](https://raw.githubusercontent.com/fhsieh/yoyomarket-opencart/master/screenshots/order.jpg)
+![Custom order view](https://user-images.githubusercontent.com/9514732/32374688-20e51936-c0e2-11e7-9d21-7db4791a21d0.jpg)
 
 
 
@@ -63,7 +64,7 @@ Modify default OpenCart order detail view for consolidated view, inline AJAX edi
 
 Extend **Admin Quick Edit** extension to add additional editable fields.
 
-![Custom product management view](https://raw.githubusercontent.com/fhsieh/yoyomarket-opencart/master/screenshots/products.jpg)
+![Custom product management view](https://user-images.githubusercontent.com/9514732/32374690-213a4d8e-c0e2-11e7-8ce5-e16f8cc68258.jpg)
 
 
 
@@ -78,26 +79,26 @@ Runs on most xAMP servers running **PHP >5.3** with `mod_rewrite` enabled for re
 Also tested on **nginx**. For readable URLs, include the following rewrite rules in the server conf section:
 
     server {
-		...
-	
-		rewrite ^/sitemap.xml$ /index.php?route=feed/google_sitemap last;
-		rewrite ^/googlebase.xml$ /index.php?route=feed/google_base last;
-		rewrite ^/download/(.*) /index.php?route=error/not_found last;
-		if (!-f $request_filename) {
-			set $rule_3 1$rule_3;
-		}
-		if (!-d $request_filename) {
-			set $rule_3 2$rule_3;
-		}
-		if ($uri !~ ".*.(ico|gif|jpg|jpeg|png|js|css)") {
-			set $rule_3 3$rule_3;
-		}
-		if ($rule_3 = "321") {
-			rewrite ^/([^?]*) /index.php?_route_=$1 last;
-		}	
+    ...
 
-		...
-	}
+    rewrite ^/sitemap.xml$ /index.php?route=feed/google_sitemap last;
+    rewrite ^/googlebase.xml$ /index.php?route=feed/google_base last;
+    rewrite ^/download/(.*) /index.php?route=error/not_found last;
+    if (!-f $request_filename) {
+      set $rule_3 1$rule_3;
+    }
+    if (!-d $request_filename) {
+      set $rule_3 2$rule_3;
+    }
+    if ($uri !~ ".*.(ico|gif|jpg|jpeg|png|js|css)") {
+      set $rule_3 3$rule_3;
+    }
+    if ($rule_3 = "321") {
+      rewrite ^/([^?]*) /index.php?_route_=$1 last;
+    }
+
+    ...
+  }
 
 ---
 
